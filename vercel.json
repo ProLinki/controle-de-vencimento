@@ -1,5 +1,15 @@
 {
   "version": 2,
-  "builds": [{ "src": "index.html", "use": "@vercel/static" }],
-  "routes": [{ "src": "/(.*)", "dest": "/index.html" }]
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" },
+    { "src": "script.js", "use": "@vercel/static" },
+    { "src": "manifest.json", "use": "@vercel/static" },
+    { "src": "service-worker.js", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/manifest.json", "headers": { "Access-Control-Allow-Origin": "*", "Content-Type": "application/manifest+json" }, "dest": "/manifest.json" },
+    { "src": "/service-worker.js", "headers": { "Access-Control-Allow-Origin": "*", "Content-Type": "application/javascript" }, "dest": "/service-worker.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
