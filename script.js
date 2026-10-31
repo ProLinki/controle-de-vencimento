@@ -5,6 +5,7 @@ let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY)) || 3;
 let produtos = [];
 let sb = null;
 let sbReady = false;
+let editando = null; // { loteId, produtoId }
 
 const formProduto = document.getElementById('formProduto');
 const listaProdutos = document.getElementById('lista-produtos');
@@ -17,11 +18,20 @@ const statVencidos = document.getElementById('statVencidos');
 const diasAlertaInput = document.getElementById('diasAlerta');
 const diasAlertaLabel = document.getElementById('diasAlertaLabel');
 const toastEl = document.getElementById('toast');
+const modalOverlay = document.getElementById('modal-overlay');
+const modalProduto = document.getElementById('modal-produto');
+const editQtd = document.getElementById('edit-quantidade');
+const editVenc = document.getElementById('edit-vencimento');
 
 function showToast(msg) {
     toastEl.textContent = msg;
     toastEl.classList.add('show');
     setTimeout(() => toastEl.classList.remove('show'), 4000);
+}
+
+// Normaliza nome: sem acentos, minúsculas, espaços duplos removidos
+function normNome(s) {
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 function initSupabase() {
@@ -38,18 +48,25 @@ function initSupabase() {
     }
 }
 
+// ============ CARREGAR ============
 async function loadProdutos() {
     if (!sbReady) { renderLista(); renderStats(); return; }
     try {
-        const { data, error } = await sb.from('lotes').select('*, produtos(nome)').order('vencimento', { ascending: true });
+        const { data, error } = await sb
+            .from('lotes')
+            .select('id, produto_id, quantidade, vencimento, produtos(nome)')
+            .order('vencimento', { ascending: true });
         if (error) throw error;
+
         const map = {};
         (data || []).forEach(r => {
             const nm = r.produtos && r.produtos.nome ? r.produtos.nome : 'Sem nome';
-            if (!map[nm]) map[nm] = { id: r.produto_id, nome: nm, lotes: [] };
-            map[nm].lotes.push({ id: r.id, quantidade: r.quantidade, vencimento: r.vencimento });
+            if (!map[r.produto_id]) map[r.produto_id] = { id: r.produto_id, nome: nm, lotes: [] };
+            map[r.produto_id].lotes.push({ id: r.id, quantidade: r.quantidade, vencimento: r.vencimento });
         });
         produtos = Object.values(map);
+        // Produtos ordenados pelo lote mais próximo; lotes já chegam ordenados por vencimento
+        produtos.sort((a, b) => new Date(a.lotes[0].vencimento) - new Date(b.lotes[0].vencimento));
     } catch (e) {
         showToast('Erro carregar: ' + e.message);
     }
@@ -57,37 +74,56 @@ async function loadProdutos() {
     renderStats();
 }
 
+// ============ SALVAR (junta nomes iguais) ============
 async function saveProduto(nome, qtd, venc) {
-    if (!sbReady) {
-        showToast('Supabase nao conectado.');
-        return;
-    }
+    if (!sbReady) { showToast('Supabase nao conectado.'); return; }
     try {
+        const { data: prods, error: e0 } = await sb.from('produtos').select('id, nome');
+        if (e0) throw e0;
+
+        const existente = (prods || []).find(p => normNome(p.nome) === normNome(nome));
         let pid;
-        const { data: ex, error: e1 } = await sb.from('produtos').select('id').eq('nome', nome).maybeSingle();
-        if (e1) throw e1;
-        if (ex && ex.id) {
-            pid = ex.id;
+        if (existente) {
+            pid = existente.id;
         } else {
-            const { data: novo, error: e2 } = await sb.from('produtos').insert({ nome: nome }).select('id').single();
+            const { data: novo, error: e2 } = await sb.from('produtos').insert({ nome: nome.trim() }).select('id').single();
             if (e2) throw e2;
             pid = novo.id;
         }
-        const { error: e3 } = await sb.from('lotes').insert({ produto_id: pid, quantidade: parseInt(qtd), vencimento: venc });
+
+        const { error: e3 } = await sb.from('lotes').insert({
+            produto_id: pid,
+            quantidade: parseInt(qtd, 10),
+            vencimento: venc
+        });
         if (e3) throw e3;
+
         await loadProdutos();
-        showToast('Lote salvo no Supabase!');
+        showToast(existente ? 'Novo lote somado ao produto existente!' : 'Produto e lote salvos no Supabase!');
     } catch (e) {
         showToast('Erro salvar: ' + e.message);
     }
 }
 
+// ============ EXCLUIR LOTE (e produto se for o último) ============
 async function deleteLote(id) {
     if (!confirm('Excluir este lote?')) return;
     if (!sbReady) { showToast('Supabase nao conectado.'); return; }
     try {
+        let prod = null;
+        produtos.forEach(p => { if (p.lotes.some(l => l.id === id)) prod = p; });
+        const eraUltimo = prod && prod.lotes.length === 1;
+
         const { error } = await sb.from('lotes').delete().eq('id', id);
         if (error) throw error;
+
+        if (eraUltimo) {
+            const { error: e2 } = await sb.from('produtos').delete().eq('id', prod.id);
+            if (e2) throw e2;
+            await loadProdutos();
+            showToast('Último lote excluído — produto removido.');
+            return;
+        }
         await loadProdutos();
         showToast('Lote removido.');
     } catch (e) {
@@ -96,9 +132,55 @@ async function deleteLote(id) {
 }
 window.deleteLote = deleteLote;
 
+// ============ EDITAR LOTE (modal) ============
+function abrirModal(loteId, produtoId) {
+    let lote = null, prod = null;
+    produtos.forEach(p => {
+        if (p.id === produtoId) {
+            prod = p;
+            p.lotes.forEach(l => { if (l.id === loteId) lote = l; });
+        }
+    });
+    if (!lote || !prod) { showToast('Lote nao encontrado.'); return; }
+
+    editando = { loteId, produtoId };
+    modalProduto.textContent = prod.nome + ' — vence ' + fmtBR(lote.vencimento);
+    editQtd.value = lote.quantidade;
+    editVenc.value = lote.vencimento;
+    modalOverlay.classList.add('show');
+    editQtd.focus();
+}
+window.abrirModal = abrirModal;
+
+function fecharModal() {
+    modalOverlay.classList.remove('show');
+    editando = null;
+}
+
+async function salvarEdicao() {
+    if (!editando) return;
+    const qtd = parseInt(editQtd.value, 10);
+    const venc = editVenc.value;
+    if (!qtd || qtd < 1 || !venc) { showToast('Preencha quantidade e data.'); return; }
+    if (!sbReady) { showToast('Supabase nao conectado.'); return; }
+    try {
+        const { error } = await sb
+            .from('lotes')
+            .update({ quantidade: qtd, vencimento: venc })
+            .eq('id', editando.loteId);
+        if (error) throw error;
+        fecharModal();
+        await loadProdutos();
+        showToast('Lote atualizado!');
+    } catch (e) {
+        showToast('Erro ao atualizar: ' + e.message);
+    }
+}
+
+// ============ HELPERS ============
 function diasRestantes(iso) {
-    const h = new Date(); h.setHours(0,0,0,0);
-    const a = new Date(iso); a.setHours(0,0,0,0);
+    const h = new Date(); h.setHours(0, 0, 0, 0);
+    const a = new Date(iso); a.setHours(0, 0, 0, 0);
     return Math.round((a - h) / 86400000);
 }
 function status(d) {
@@ -106,31 +188,66 @@ function status(d) {
     if (d <= DIAS_ALERTA) return { t: 'VENCE LOGO', c: 'proximo' };
     return { t: 'OK', c: 'ok' };
 }
+function txtDias(d) {
+    const a = Math.abs(d);
+    const s = a === 1 ? '' : 's';
+    if (d < 0) return 'vencido há ' + a + ' dia' + s;
+    if (d === 0) return 'vence hoje';
+    return d + ' dia' + s + ' restante' + s;
+}
 function fmtBR(iso) {
     return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
+// ============ RENDERIZAR (agrupado por produto) ============
 function renderLista() {
-    const termo = inputBusca.value.toLowerCase().trim();
-    let todos = [];
-    produtos.forEach(p => p.lotes.forEach(l => todos.push({ pn: p.nome, q: l.quantidade, v: l.vencimento, id: l.id })));
-    todos.sort((a, b) => new Date(a.v) - new Date(b.v));
-    const filtrados = todos.filter(t => t.pn.toLowerCase().includes(termo));
+    const termo = normNome(inputBusca.value);
+    const filtrados = produtos.filter(p => !termo || normNome(p.nome).includes(termo));
+
     listaProdutos.innerHTML = '';
     if (filtrados.length === 0) { vazio.style.display = 'block'; return; }
     vazio.style.display = 'none';
-    filtrados.forEach(t => {
-        const d = diasRestantes(t.v);
-        const s = status(d);
+
+    filtrados.forEach(p => {
         const card = document.createElement('div');
         card.className = 'produto-card';
-        card.innerHTML = '<div class="nome">' + esc(t.pn) + '</div>' +
-            '<div class="meta"><span><strong>Qtd:</strong> ' + t.q + '</span>' +
-            '<span><strong>Vence:</strong> ' + fmtBR(t.v) + '</span>' +
-            '<span class="dias">' + d + ' dia' + (Math.abs(d) !== 1 ? 's' : '') + ' restante' + (d === 1 ? '' : 's') + '</span></div>' +
-            '<span class="status status-' + s.c + '">' + s.t + '</span>' +
-            '<div class="acoes"><button class="btn btn-excluir" onclick="deleteLote(\'' + t.id + '\')">Excluir lote</button></div>';
+
+        const totalQtd = p.lotes.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
+        const head = document.createElement('div');
+        head.className = 'produto-head';
+        head.innerHTML = '<div class="nome">' + esc(p.nome) + '</div>' +
+            '<div class="produto-info">' +
+            '<span>' + p.lotes.length + ' lote' + (p.lotes.length > 1 ? 's' : '') + '</span>' +
+            '<span>Total: ' + totalQtd + ' un</span>' +
+            '</div>';
+        card.appendChild(head);
+
+        const listaLotes = document.createElement('div');
+        listaLotes.className = 'lote-lista';
+
+        p.lotes.forEach(l => {
+            const d = diasRestantes(l.vencimento);
+            const s = status(d);
+            const item = document.createElement('div');
+            item.className = 'lote-item';
+            item.innerHTML =
+                '<div class="lote-info">' +
+                '<div class="lote-top"><span class="lote-qtd">' + (parseInt(l.quantidade, 10) || 0) + ' un</span>' +
+                '<span class="status status-' + s.c + '">' + s.t + '</span></div>' +
+                '<div class="meta"><span><strong>Vence:</strong> ' + fmtBR(l.vencimento) + '</span>' +
+                '<span class="dias">' + txtDias(d) + '</span></div>' +
+                '</div>' +
+                '<div class="lote-acoes">' +
+                '<button type="button" class="btn-mini mini-editar">Editar</button>' +
+                '<button type="button" class="btn-mini mini-excluir">Excluir</button>' +
+                '</div>';
+            item.querySelector('.mini-editar').addEventListener('click', () => abrirModal(l.id, p.id));
+            item.querySelector('.mini-excluir').addEventListener('click', () => deleteLote(l.id));
+            listaLotes.appendChild(item);
+        });
+
+        card.appendChild(listaLotes);
         listaProdutos.appendChild(card);
     });
 }
@@ -147,6 +264,7 @@ function renderStats() {
     statVencidos.textContent = venc;
 }
 
+// ============ INICIALIZAÇÃO ============
 document.addEventListener('DOMContentLoaded', () => { try {
     initSupabase();
     if (todayBadge) todayBadge.textContent = 'Hoje: ' + fmtBR(new Date().toISOString().split('T')[0]);
@@ -162,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (!nome || !qtd || !venc) { showToast('Preencha todos os campos.'); return; }
         saveProduto(nome, qtd, venc);
         formProduto.reset();
+        document.getElementById('quantidade').value = 1;
         document.getElementById('vencimento').value = new Date().toISOString().split('T')[0];
     });
 
@@ -176,6 +295,12 @@ document.addEventListener('DOMContentLoaded', () => { try {
         renderStats();
         showToast('Alerta: ' + DIAS_ALERTA + ' dia(s)');
     });
+
+    // Modal de edição
+    document.getElementById('modal-salvar').addEventListener('click', salvarEdicao);
+    document.getElementById('modal-cancelar').addEventListener('click', fecharModal);
+    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) fecharModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && editando) fecharModal(); });
 
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });

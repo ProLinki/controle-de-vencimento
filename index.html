@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Mercadinho Belo - Controle</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -20,9 +20,21 @@
 <section class="card"><h2>Lotes por Vencimento</h2><div class="input-group search-group"><input type="text" id="busca" placeholder="Buscar produto..."></div><div id="lista-produtos" class="produto-lista"></div><div id="vazio" class="empty-state"><p>Nenhum lote cadastrado ainda.</p></div></section>
 <section class="card stats"><div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total de lotes</div></div><div class="stat-item alert"><div class="stat-number" id="statProximos">0</div><div class="stat-label">Vencem em até <span id="diasAlertaLabel">3</span> dia(s)</div></div><div class="stat-item danger"><div class="stat-number" id="statVencidos">0</div><div class="stat-label">Já venceram</div></div></section>
 </main>
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <h3 id="modal-titulo">Editar Lote</h3>
+    <p id="modal-produto" class="modal-sub"></p>
+    <div class="input-group"><label>Quantidade deste lote</label><input type="number" id="edit-quantidade" min="1" value="1"></div>
+    <div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="edit-vencimento"></div>
+    <div class="modal-acoes">
+      <button type="button" id="modal-cancelar" class="btn btn-outline">Cancelar</button>
+      <button type="button" id="modal-salvar" class="btn btn-success">Salvar alterações</button>
+    </div>
+  </div>
+</div>
 <div id="toast" class="toast"></div>
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
-<script src="script.js?v=4"></script>
+<script src="script.js?v=5"></script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=5').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>
