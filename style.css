@@ -1,0 +1,56 @@
+/* ============================
+   Mercadinho Belo - Controle
+   Estética 12 Axes
+   ============================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f7f3ec; color: #111827; line-height: 1.6; min-height: 100vh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+.container { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+.app-header { background: #f7f3ec; padding: 32px 0 16px; border-bottom: 1px solid #e7e2d8; position: sticky; top: 0; z-index: 100; width: 100%; }
+.app-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; color: #111827; }
+.app-header .subtitle { font-size: 0.9rem; color: #6b7280; font-weight: 600; }
+.card { background: #fff; border-radius: 16px; box-shadow: 0 8px 24px -6px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; border: 1px solid #e7e2d8; }
+.card h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; color: #111827; text-transform: uppercase; letter-spacing: 0.3px; }
+.sub { font-size: 0.875rem; color: #6b7280; margin-top: -6px; margin-bottom: 16px; }
+.input-group { margin-bottom: 16px; }
+.input-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #6b7280; margin-bottom: 8px; }
+.input-group input, .input-group select { width: 100%; padding: 12px 16px; border: 1px solid #dcd6c9; border-radius: 10px; font-size: 1rem; background: #fff; color: #111827; appearance: none; -webkit-appearance: none; }
+.input-group input:focus, .input-group select:focus { outline: none; border-color: #a83232; box-shadow: 0 0 0 3px rgba(168, 50, 50, 0.1); }
+.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: transform 0.1s, opacity 0.2s; display: block; text-align: center; text-decoration: none; }
+.btn:active { transform: scale(0.98); }
+.btn-success { background: #14532d; color: #fff; }
+.btn-success:hover { opacity: 0.92; }
+.btn-outline { background: #fff; border: 1px solid #dcd6c9; color: #111827; }
+.btn-outline:hover { background: #f7f3ec; }
+.search-group { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.search-group input[type="text"] { flex: 1; }
+.produto-lista { display: flex; flex-direction: column; gap: 12px; }
+.produto-card { background: #fff; border: 1px solid #e7e2d8; border-left: 4px solid #0ea5e9; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; animation: slideIn 0.35s ease; box-shadow: 0 4px 12px -4px rgba(0,0,0,0.05); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.produto-card .nome { font-weight: 800; font-size: 1.1rem; color: #111827; }
+.produto-card .meta { font-size: 0.875rem; color: #6b7280; display: flex; gap: 12px; flex-wrap: wrap; }
+.produto-card .dias { font-weight: 800; font-size: 0.95rem; color: #111827; }
+.produto-card .status { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 12px; border-radius: 8px; width: fit-content; border: 1px solid; align-self: flex-start; }
+.status-vencido { background: #fdecea; color: #a83232; border-color: #f5c6c7; }
+.status-proximo { background: #fdf3e2; color: #9a6410; border-color: #f5d5a8; }
+.status-ok { background: #e7f2ec; color: #14532d; border-color: #c7e3d6; }
+.acoes { margin-top: 10px; display: flex; gap: 8px; }
+.btn-excluir { width: auto; flex: 1; background: #fee2e2; color: #a83232; border: 1px solid #fecaca; }
+.btn-excluir:hover { background: #fecaca; }
+.empty-state { text-align: center; padding: 40px 16px; color: #6b7280; }
+.empty-state p { font-size: 0.95rem; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.stat-item { background: #0e1b2a; color: #fff; border-radius: 12px; padding: 16px 12px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
+.stat-number { font-size: 1.75rem; font-weight: 900; margin-bottom: 4px; color: #fff; }
+.stat-label { font-size: 0.7rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.4px; color: #fff; }
+.stat-item.alert .stat-number { color: #fbbf24; }
+.stat-item.danger .stat-number { color: #f87171; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px); background: #0e1b2a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 0.875rem; opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 1000; pointer-events: none; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.install-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #e7e2d8; border-radius: 12px; padding: 10px 14px; display: flex; gap: 8px; align-items: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.install-bar.show { opacity: 1; pointer-events: auto; }
+.install-bar span { font-size: 0.82rem; color: #6b7280; }
+.install-bar .btn { width: auto; padding: 6px 12px; font-size: 0.82rem; display: inline-block; }
+.install-bar .btn-outline { padding: 6px 10px; }
+.install-bar .btn-primary { padding: 6px 14px; }
+@media (max-width: 380px) { .container { padding: 16px 12px; } .card { padding: 18px; } .stats { gap: 8px; } .app-header h1 { font-size: 1.75rem; } .stat-number { font-size: 1.5rem; } }
