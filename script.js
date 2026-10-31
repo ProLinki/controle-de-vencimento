@@ -67,11 +67,35 @@ async function loadProdutos() {
         produtos = Object.values(map);
         // Produtos ordenados pelo lote mais próximo; lotes já chegam ordenados por vencimento
         produtos.sort((a, b) => new Date(a.lotes[0].vencimento) - new Date(b.lotes[0].vencimento));
+
+        // AUTO-HEAL: remove produtos sem nenhum lote (órfãos)
+        limparProdutosOrfaos(data || []);
     } catch (e) {
         showToast('Erro carregar: ' + e.message);
     }
     renderLista();
     renderStats();
+}
+
+// Remove silenciosamente produtos que ficaram sem nenhum lote (órfãos)
+async function limparProdutosOrfaos(lotesAtuais) {
+    try {
+        const { data: todos, error } = await sb.from('produtos').select('id, created_at');
+        if (error || !todos) return;
+        const comLote = new Set(lotesAtuais.map(l => l.produto_id));
+        const agora = Date.now();
+        // Ignora produtos criados nos últimos 30s (podem estar em meio a um cadastro)
+        const orfaos = todos.filter(p =>
+            !comLote.has(p.id) && (agora - new Date(p.created_at).getTime()) > 30000
+        );
+        if (orfaos.length === 0) return;
+        for (const o of orfaos) {
+            await sb.from('produtos').delete().eq('id', o.id);
+        }
+        console.log('Auto-heal: ' + orfaos.length + ' produto(s) sem lote removido(s).');
+    } catch (e) {
+        console.warn('Auto-heal falhou (ignorado):', e.message);
+    }
 }
 
 // ============ SALVAR (junta nomes iguais) ============
@@ -110,22 +134,32 @@ async function deleteLote(id) {
     if (!confirm('Excluir este lote?')) return;
     if (!sbReady) { showToast('Supabase nao conectado.'); return; }
     try {
-        let prod = null;
-        produtos.forEach(p => { if (p.lotes.some(l => l.id === id)) prod = p; });
-        const eraUltimo = prod && prod.lotes.length === 1;
+        // 1) Descobre o produto dono do lote (consulta ao servidor, não à lista local)
+        const { data: lote, error: e0 } = await sb
+            .from('lotes').select('produto_id').eq('id', id).maybeSingle();
+        if (e0) throw e0;
+        const produtoId = lote ? lote.produto_id : null;
 
-        const { error } = await sb.from('lotes').delete().eq('id', id);
-        if (error) throw error;
+        // 2) Apaga o lote
+        const { error: e1 } = await sb.from('lotes').delete().eq('id', id);
+        if (e1) throw e1;
 
-        if (eraUltimo) {
-            const { error: e2 } = await sb.from('produtos').delete().eq('id', prod.id);
+        // 3) Se tinha produto, verifica no servidor se sobrou algum lote
+        let ultimo = false;
+        if (produtoId) {
+            const { count, error: e2 } = await sb
+                .from('lotes').select('id', { count: 'exact', head: true })
+                .eq('produto_id', produtoId);
             if (e2) throw e2;
-            await loadProdutos();
-            showToast('Último lote excluído — produto removido.');
-            return;
+            ultimo = (count === 0);
+            if (ultimo) {
+                const { error: e3 } = await sb.from('produtos').delete().eq('id', produtoId);
+                if (e3) throw e3;
+            }
         }
+
         await loadProdutos();
-        showToast('Lote removido.');
+        showToast(ultimo ? 'Lote e produto excluídos.' : 'Lote removido.');
     } catch (e) {
         showToast('Erro remover: ' + e.message);
     }
