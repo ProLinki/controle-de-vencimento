@@ -66,6 +66,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 .notif-status.ok { color: #14532d; font-weight: 700; }
 .notif-status.err { color: #a83232; font-weight: 700; }
 #btn-notif.ativado { background: #e7f2ec; border-color: #c7e3d6; color: #14532d; cursor: default; }
+/* Login */
+.tela-login { position: fixed; inset: 0; background: #f7f3ec; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2500; }
+.login-card { background: #fff; border: 1px solid #e7e2d8; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2); padding: 32px 24px; width: 100%; max-width: 380px; text-align: center; }
+.login-logo { font-size: 2.5rem; line-height: 1; }
+.login-card h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; margin-top: 8px; color: #111827; }
+.login-sub { font-size: 0.85rem; color: #6b7280; font-weight: 600; margin-bottom: 20px; }
+.login-card form { text-align: left; }
+.login-erro { color: #a83232; font-size: 0.85rem; font-weight: 700; text-align: center; margin-top: 10px; min-height: 1.1em; }
+/* Chip do usuário */
+.user-chip { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.user-chip .nome { font-size: 0.82rem; font-weight: 700; color: #111827; }
+.cargo-badge { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 8px; border: 1px solid; }
+.cargo-admin { background: #fdecea; color: #a83232; border-color: #f5c6c7; }
+.cargo-funcionario { background: #e7f2ec; color: #14532d; border-color: #c7e3d6; }
+.cargo-patrao { background: #fdf3e2; color: #9a6410; border-color: #f5d5a8; }
+.btn-sair { margin-left: auto; background: #fff; border: 1px solid #dcd6c9; color: #a83232; font-size: 0.75rem; font-weight: 700; padding: 5px 14px; border-radius: 8px; cursor: pointer; }
+.btn-sair:hover { background: #fdecea; }
+.dica { font-size: 0.72rem; font-weight: 600; color: #9ca3af; }
+/* Cards de funcionários */
+.lista-funcionarios { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.func-card { background: #faf8f4; border: 1px solid #e7e2d8; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.func-info { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
+.func-info .fn { font-weight: 800; font-size: 0.95rem; color: #111827; }
+.func-info .inativo { color: #9ca3af; font-weight: 600; font-size: 0.8rem; }
+.func-info .fl { font-size: 0.78rem; color: #6b7280; }
+.func-acoes { display: flex; gap: 6px; }
+/* Dono do lote */
+.lote-dono { font-size: 0.72rem; color: #9ca3af; font-weight: 600; }
 .empty-state { text-align: center; padding: 40px 16px; color: #6b7280; }
 .empty-state p { font-size: 0.95rem; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
