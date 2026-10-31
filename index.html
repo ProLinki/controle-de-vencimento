@@ -13,16 +13,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header class="app-header"><div class="container"><h1>ðŸ›’ Mercadinho Belo</h1><span class="subtitle">Controle de Vencimento</span></div></header>
+<header class="app-header"><div class="container"><h1>Ã°Å¸â€ºâ€™ Mercadinho Belo</h1><span class="subtitle">Controle de Vencimento</span></div></header>
 <main class="container">
-<section class="card"><h2>Cadastrar Produto / Lote</h2><p class="sub">O mesmo produto pode ter vÃ¡rios lotes com datas diferentes.</p><form id="formProduto"><div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div><div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div><div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="vencimento" required></div><button type="submit" class="btn btn-success">Adicionar Lote</button></form></section>
-<section class="card"><h2>ConfiguraÃ§Ã£o de Alerta</h2><div class="input-group"><label>Exibir alerta quando faltar (dias)</label><input type="number" id="diasAlerta" min="1" value="3"></div></section>
+<section class="card"><h2>Cadastrar Produto / Lote</h2><p class="sub">O mesmo produto pode ter vÃƒÂ¡rios lotes com datas diferentes.</p><form id="formProduto"><div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div><div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div><div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="vencimento" required></div><button type="submit" class="btn btn-success">Adicionar Lote</button></form></section>
+<section class="card"><h2>ConfiguraÃƒÂ§ÃƒÂ£o de Alerta</h2><div class="input-group"><label>Exibir alerta quando faltar (dias)</label><input type="number" id="diasAlerta" min="1" value="3"></div></section>
 <section class="card"><h2>Lotes por Vencimento</h2><div class="input-group search-group"><input type="text" id="busca" placeholder="Buscar produto..."></div><div id="lista-produtos" class="produto-lista"></div><div id="vazio" class="empty-state"><p>Nenhum lote cadastrado ainda.</p></div></section>
-<section class="card stats"><div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total de lotes</div></div><div class="stat-item alert"><div class="stat-number" id="statProximos">0</div><div class="stat-label">Vencem em atÃ© <span id="diasAlertaLabel">3</span> dia(s)</div></div><div class="stat-item danger"><div class="stat-number" id="statVencidos">0</div><div class="stat-label">JÃ¡ venceram</div></div></section>
+<section class="card stats"><div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total de lotes</div></div><div class="stat-item alert"><div class="stat-number" id="statProximos">0</div><div class="stat-label">Vencem em atÃƒÂ© <span id="diasAlertaLabel">3</span> dia(s)</div></div><div class="stat-item danger"><div class="stat-number" id="statVencidos">0</div><div class="stat-label">JÃƒÂ¡ venceram</div></div></section>
 </main>
 <div id="toast" class="toast"></div>
-<div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">Ã—</button></div>
-<script src="script.js?v=2"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=3').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">Ãƒâ€”</button></div>
+<script src="script.js?v=3"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=4').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>
