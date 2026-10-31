@@ -147,9 +147,9 @@ function renderStats() {
     statVencidos.textContent = venc;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => { try {
     initSupabase();
-    todayBadge.textContent = 'Hoje: ' + fmtBR(new Date().toISOString().split('T')[0]);
+    if (todayBadge) todayBadge.textContent = 'Hoje: ' + fmtBR(new Date().toISOString().split('T')[0]);
     diasAlertaInput.value = DIAS_ALERTA;
     diasAlertaLabel.textContent = DIAS_ALERTA;
     loadProdutos();
@@ -183,4 +183,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnCloseInstall').addEventListener('click', () => document.getElementById('install-bar').classList.remove('show'));
 
     setInterval(() => loadProdutos(), 86400000);
+  } catch (err) { console.error('Erro na inicializacao:', err); showToast('Erro na pagina: ' + err.message); }
 });

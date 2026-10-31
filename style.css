@@ -54,3 +54,4 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 .install-bar .btn-outline { padding: 6px 10px; }
 .install-bar .btn-primary { padding: 6px 14px; }
 @media (max-width: 380px) { .container { padding: 16px 12px; } .card { padding: 18px; } .stats { gap: 8px; } .app-header h1 { font-size: 1.75rem; } .stat-number { font-size: 1.5rem; } }
+.today-badge { display: inline-block; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #a83232; background: #fdecea; border: 1px solid #f5c6c7; padding: 3px 12px; border-radius: 8px; }
