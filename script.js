@@ -1,12 +1,12 @@
 // ============================
 // Mercadinho Belo - Controle
-// Integração Supabase
+// IntegraÃ§Ã£o Supabase
 // ============================
 
 // >>> CONFIGURE AQUI SUA URL E CHAVE DO SUPABASE <<<
 // Obtenha em: https://supabase.com -> Settings -> API
-const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
-const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
+const SUPABASE_URL = 'https://izfonjoluifotwxzleix.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Zm9uam9sdWlmb3R3eHpsZWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MDEwODAsImV4cCI6MjEwODk3NzA4MH0.A_o5OSNWKV8oKCO3y9P32XHJUn_G4ln4qmDzwqDD5Rc';
 
 const DIAS_KEY = 'dias_alerta_mercadinho';
 let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY)) || 3;
@@ -32,7 +32,7 @@ function initSupabase() {
     if (!SUPABASE_URL || SUPABASE_URL.includes('SUA_URL') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('SUA_CHAVE')) {
         supabaseConfigurado = false;
         supabase = null;
-        mostrarToast('⚠️ Supabase não configurado. Usando armazenamento local temporário.');
+        mostrarToast('âš ï¸ Supabase nÃ£o configurado. Usando armazenamento local temporÃ¡rio.');
         return;
     }
 
@@ -43,7 +43,7 @@ function initSupabase() {
         console.error('Erro ao inicializar Supabase:', err);
         supabaseConfigurado = false;
         supabase = null;
-        mostrarToast('⚠️ Erro ao conectar com Supabase. Usando local temporário.');
+        mostrarToast('âš ï¸ Erro ao conectar com Supabase. Usando local temporÃ¡rio.');
     }
 }
 
@@ -84,7 +84,7 @@ async function carregarProdutos() {
         atualizarEstatisticas();
     } catch (err) {
         console.error(err);
-        mostrarToast('❌ Erro ao carregar produtos.');
+        mostrarToast('âŒ Erro ao carregar produtos.');
         const raw = localStorage.getItem('produtos_mercadinho');
         produtos = raw ? JSON.parse(raw) : [];
         renderizarLista();
@@ -107,7 +107,7 @@ async function salvarProduto(nome, quantidade, vencimento) {
             localStorage.setItem('produtos_mercadinho', JSON.stringify(produtos));
             renderizarLista();
             atualizarEstatisticas();
-            mostrarToast('✅ Lote adicionado (local temporário)!');
+            mostrarToast('âœ… Lote adicionado (local temporÃ¡rio)!');
             return;
         }
 
@@ -138,10 +138,10 @@ async function salvarProduto(nome, quantidade, vencimento) {
         if (err3) throw err3;
 
         await carregarProdutos();
-        mostrarToast('✅ Lote salvo no Supabase!');
+        mostrarToast('âœ… Lote salvo no Supabase!');
     } catch (err) {
         console.error(err);
-        mostrarToast('❌ Erro ao salvar lote.');
+        mostrarToast('âŒ Erro ao salvar lote.');
     }
 }
 
@@ -150,16 +150,16 @@ async function excluirLote(loteId) {
     if (!confirm('Deseja excluir este lote?')) return;
     try {
         if (!supabaseConfigurado || !supabase) {
-            mostrarToast('⚠️ Supabase não configurado.');
+            mostrarToast('âš ï¸ Supabase nÃ£o configurado.');
             return;
         }
         const { error } = await supabase.from('lotes').delete().eq('id', loteId);
         if (error) throw error;
         await carregarProdutos();
-        mostrarToast('🗑️ Lote removido.');
+        mostrarToast('ðŸ—‘ï¸ Lote removido.');
     } catch (err) {
         console.error(err);
-        mostrarToast('❌ Erro ao remover lote.');
+        mostrarToast('âŒ Erro ao remover lote.');
     }
 }
 window.excluirLote = excluirLote;
@@ -200,7 +200,7 @@ function renderizarLista() {
     });
 }
 
-// Utilitários
+// UtilitÃ¡rios
 function diasRestantes(dataISO) {
     const hoje = new Date(); hoje.setHours(0,0,0,0);
     const alvo = new Date(dataISO); alvo.setHours(0,0,0,0);
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const quantidade = parseInt(document.getElementById('quantidade').value, 10);
         const vencimento = document.getElementById('vencimento').value;
         if (!nome || !quantidade || !vencimento) {
-            mostrarToast('⚠️ Preencha todos os campos.');
+            mostrarToast('âš ï¸ Preencha todos os campos.');
             return;
         }
         salvarProduto(nome, quantidade, vencimento);
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         diasAlertaLabel.textContent = DIAS_ALERTA;
         renderizarLista();
         atualizarEstatisticas();
-        mostrarToast('📅 Alerta configurado para ' + DIAS_ALERTA + ' dia(s)');
+        mostrarToast('ðŸ“… Alerta configurado para ' + DIAS_ALERTA + ' dia(s)');
     });
 
     // PWA install
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('install-bar').classList.remove('show');
     });
 
-    // Notificações diárias
+    // NotificaÃ§Ãµes diÃ¡rias
     setInterval(() => { carregarProdutos(); verificarNotificacoes(); }, 24*60*60*1000);
 });
 
@@ -298,7 +298,7 @@ function verificarNotificacoes() {
     const proximos = todosLotes.filter(item => { const d = diasRestantes(item.vencimento); return d >= 0 && d <= DIAS_ALERTA; });
     if (proximos.length > 0 && Notification.permission === 'granted') {
         const maisProximo = proximos[0];
-        new Notification('📦 Produto perto do vencimento', {
+        new Notification('ðŸ“¦ Produto perto do vencimento', {
             body: maisProximo.produtoNome + ' vence em ' + formatarDataBR(maisProximo.vencimento) + ' (' + diasRestantes(maisProximo.vencimento) + ' dia(s)).',
             icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
             tag: 'mercadinho'
