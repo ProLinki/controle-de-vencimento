@@ -3,7 +3,7 @@
 // Integração Supabase
 // ============================
 
-// CONFIGURE AQUI SUA URL E CHAVE DO SUPABASE
+// >>> CONFIGURE AQUI SUA URL E CHAVE DO SUPABASE <<<
 // Obtenha em: https://supabase.com -> Settings -> API
 const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
 const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
@@ -25,52 +25,66 @@ const toastEl = document.getElementById('toast');
 
 let produtos = [];
 let supabase = null;
+let supabaseConfigurado = false;
 
-// Inicializar Supabase
+// Inicializar Supabase apenas se as credenciais estiverem preenchidas
 function initSupabase() {
-    if (typeof supabase !== 'undefined' && window.supabase) {
+    if (!SUPABASE_URL || SUPABASE_URL.includes('SUA_URL') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('SUA_CHAVE')) {
+        supabaseConfigurado = false;
+        supabase = null;
+        mostrarToast('⚠️ Supabase não configurado. Usando armazenamento local temporário.');
+        return;
+    }
+
+    try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseConfigurado = true;
+    } catch (err) {
+        console.error('Erro ao inicializar Supabase:', err);
+        supabaseConfigurado = false;
+        supabase = null;
+        mostrarToast('⚠️ Erro ao conectar com Supabase. Usando local temporário.');
     }
 }
 
-// Carregar produtos do Supabase
+// Carregar produtos do Supabase ou localStorage
 async function carregarProdutos() {
     try {
-        if (!supabase) {
-            // Fallback localStorage se Supabase não configurado
-            const raw = localStorage.getItem('produtos_mercadinho');
-            produtos = raw ? JSON.parse(raw) : [];
+        if (supabaseConfigurado && supabase) {
+            const { data, error } = await supabase
+                .from('lotes')
+                .select('*, produtos(nome)')
+                .order('vencimento', { ascending: true });
+
+            if (error) throw error;
+
+            const mapa = {};
+            (data || []).forEach(lote => {
+                const nome = lote.produtos?.nome || 'Produto sem nome';
+                if (!mapa[nome]) {
+                    mapa[nome] = { id: lote.produto_id, nome: nome, lotes: [] };
+                }
+                mapa[nome].lotes.push({
+                    id: lote.id,
+                    quantidade: lote.quantidade,
+                    vencimento: lote.vencimento
+                });
+            });
+
+            produtos = Object.values(mapa);
             renderizarLista();
             atualizarEstatisticas();
             return;
         }
 
-        const { data, error } = await supabase
-            .from('lotes')
-            .select('*, produtos(nome)')
-            .order('vencimento', { ascending: true });
-
-        if (error) throw error;
-
-        // Agrupar lotes por produto
-        const mapa = {};
-        (data || []).forEach(lote => {
-            const nome = lote.produtos?.nome || 'Produto sem nome';
-            if (!mapa[nome]) {
-                mapa[nome] = { id: lote.produto_id, nome: nome, lotes: [] };
-            }
-            mapa[nome].lotes.push({
-                id: lote.id,
-                quantidade: lote.quantidade,
-                vencimento: lote.vencimento
-            });
-        });
-
-        produtos = Object.values(mapa);
+        // Fallback localStorage
+        const raw = localStorage.getItem('produtos_mercadinho');
+        produtos = raw ? JSON.parse(raw) : [];
         renderizarLista();
         atualizarEstatisticas();
     } catch (err) {
         console.error(err);
+        mostrarToast('❌ Erro ao carregar produtos.');
         const raw = localStorage.getItem('produtos_mercadinho');
         produtos = raw ? JSON.parse(raw) : [];
         renderizarLista();
@@ -78,10 +92,10 @@ async function carregarProdutos() {
     }
 }
 
-// Salvar produto/lote no Supabase
+// Salvar produto/lote
 async function salvarProduto(nome, quantidade, vencimento) {
     try {
-        if (!supabase) {
+        if (!supabaseConfigurado || !supabase) {
             // Fallback localStorage
             const novoLote = { id: Date.now().toString(), quantidade: quantidade, vencimento: vencimento };
             const idx = produtos.findIndex(p => p.nome.toLowerCase() === nome.toLowerCase());
@@ -93,7 +107,7 @@ async function salvarProduto(nome, quantidade, vencimento) {
             localStorage.setItem('produtos_mercadinho', JSON.stringify(produtos));
             renderizarLista();
             atualizarEstatisticas();
-            mostrarToast('Lote adicionado!');
+            mostrarToast('✅ Lote adicionado (local temporário)!');
             return;
         }
 
@@ -124,10 +138,10 @@ async function salvarProduto(nome, quantidade, vencimento) {
         if (err3) throw err3;
 
         await carregarProdutos();
-        mostrarToast('Lote adicionado!');
+        mostrarToast('✅ Lote salvo no Supabase!');
     } catch (err) {
         console.error(err);
-        mostrarToast('Erro ao salvar lote.');
+        mostrarToast('❌ Erro ao salvar lote.');
     }
 }
 
@@ -135,18 +149,17 @@ async function salvarProduto(nome, quantidade, vencimento) {
 async function excluirLote(loteId) {
     if (!confirm('Deseja excluir este lote?')) return;
     try {
-        if (!supabase) {
-            // Fallback localStorage - precisamos reconstruir
-            mostrarToast('Use o Supabase para excluir lotes.');
+        if (!supabaseConfigurado || !supabase) {
+            mostrarToast('⚠️ Supabase não configurado.');
             return;
         }
         const { error } = await supabase.from('lotes').delete().eq('id', loteId);
         if (error) throw error;
         await carregarProdutos();
-        mostrarToast('Lote removido.');
+        mostrarToast('🗑️ Lote removido.');
     } catch (err) {
         console.error(err);
-        mostrarToast('Erro ao remover lote.');
+        mostrarToast('❌ Erro ao remover lote.');
     }
 }
 window.excluirLote = excluirLote;
@@ -235,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const quantidade = parseInt(document.getElementById('quantidade').value, 10);
         const vencimento = document.getElementById('vencimento').value;
         if (!nome || !quantidade || !vencimento) {
-            mostrarToast('Preencha todos os campos.');
+            mostrarToast('⚠️ Preencha todos os campos.');
             return;
         }
         salvarProduto(nome, quantidade, vencimento);
@@ -252,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         diasAlertaLabel.textContent = DIAS_ALERTA;
         renderizarLista();
         atualizarEstatisticas();
-        mostrarToast('Alerta configurado para ' + DIAS_ALERTA + ' dia(s)');
+        mostrarToast('📅 Alerta configurado para ' + DIAS_ALERTA + ' dia(s)');
     });
 
     // PWA install
@@ -296,6 +309,6 @@ function verificarNotificacoes() {
 function mostrarToast(mensagem) {
     toastEl.textContent = mensagem;
     toastEl.classList.add('show');
-    setTimeout(() => toastEl.classList.remove('show'), 3000);
+    setTimeout(() => toastEl.classList.remove('show'), 4000);
 }
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
