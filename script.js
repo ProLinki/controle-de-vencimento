@@ -211,6 +211,141 @@ async function salvarEdicao() {
     }
 }
 
+// ============ NOTIFICAÇÕES DO DISPOSITIVO ============
+const NOTIF_KEY = 'notificacao_diaria_mercadinho';
+const btnNotif = document.getElementById('btn-notif');
+const notifStatus = document.getElementById('notif-status');
+
+function notifDisponivel() { return ('Notification' in window); }
+
+function atualizarUINotificacao() {
+    if (!btnNotif) return;
+    if (!notifDisponivel()) {
+        notifStatus.textContent = 'Este navegador não suporta notificações.';
+        notifStatus.className = 'notif-status err';
+        btnNotif.style.display = 'none';
+        return;
+    }
+    const p = Notification.permission;
+    if (p === 'granted') {
+        btnNotif.textContent = '✅ Notificações ativadas';
+        btnNotif.classList.add('ativado');
+        notifStatus.textContent = 'Você receberá um aviso quando itens estiverem perto do vencimento.';
+        notifStatus.className = 'notif-status ok';
+    } else if (p === 'denied') {
+        btnNotif.textContent = '🔕 Notificações bloqueadas';
+        notifStatus.textContent = 'Permissão negada. Libere nas configurações do site/navegador para ativar.';
+        notifStatus.className = 'notif-status err';
+    } else {
+        btnNotif.textContent = '🔔 Ativar notificações do dispositivo';
+        notifStatus.textContent = 'Receba um aviso no seu celular quando algum item estiver perto do vencimento.';
+        notifStatus.className = 'notif-status';
+    }
+}
+
+async function pedirPermissaoNotificacao() {
+    if (!notifDisponivel()) { showToast('Este navegador não suporta notificações.'); return; }
+    if (Notification.permission === 'granted') { showToast('Notificações já estão ativadas.'); verificarNotificacoes(true); return; }
+    if (Notification.permission === 'denied') {
+        showToast('Permissão negada. Libere nas configurações do site.');
+        atualizarUINotificacao();
+        return;
+    }
+    try {
+        const perm = await Notification.requestPermission();
+        atualizarUINotificacao();
+        if (perm === 'granted') {
+            showToast('Notificações ativadas!');
+            // Envia um aviso de teste imediato
+            const enviada = await enviarNotificacao('🔔 Notificações ativadas', 'Pronto! Avisaremos aqui quando algum item estiver perto do vencimento.', true);
+            if (enviada) console.log('Notificação de teste enviada.');
+        } else {
+            showToast('Permissão não concedida.');
+        }
+    } catch (e) {
+        showToast('Erro ao pedir permissão: ' + e.message);
+    }
+}
+
+// Monta o resumo dos itens no prazo (vencidos + próximos)
+function montarAviso() {
+    const itens = [];
+    produtos.forEach(p => p.lotes.forEach(l => {
+        const d = diasRestantes(l.vencimento);
+        if (d <= DIAS_ALERTA) itens.push({ nome: p.nome, dias: d });
+    }));
+    if (itens.length === 0) return null;
+
+    // Ordena: vencidos primeiro, depois os mais próximos
+    itens.sort((a, b) => a.dias - b.dias);
+
+    const vencidos = itens.filter(i => i.dias < 0).length;
+    const proximos = itens.length - vencidos;
+
+    let titulo, corpo;
+    if (vencidos > 0 && proximos > 0) {
+        titulo = '⚠️ ' + vencidos + ' vencido(s) e ' + proximos + ' perto do vencimento';
+    } else if (vencidos > 0) {
+        titulo = '⚠️ ' + vencidos + ' item(ns) já venceram';
+    } else {
+        titulo = '⏰ ' + proximos + ' item(ns) vencem em até ' + DIAS_ALERTA + ' dia(s)';
+    }
+
+    const linhas = itens.slice(0, 5).map(i => {
+        const d = i.dias;
+        if (d < 0) return '• ' + i.nome + ' — vencido há ' + Math.abs(d) + ' dia(s)';
+        if (d === 0) return '• ' + i.nome + ' — vence HOJE';
+        return '• ' + i.nome + ' — vence em ' + d + ' dia(s)';
+    });
+    if (itens.length > 5) linhas.push('… e mais ' + (itens.length - 5) + ' item(ns)');
+    corpo = linhas.join('\n');
+
+    return { titulo, corpo, total: itens.length };
+}
+
+async function enviarNotificacao(titulo, corpo, forcar) {
+    if (!notifDisponivel() || Notification.permission !== 'granted') return false;
+
+    // Evita spam: só 1 notificação automática por dia (exceto teste manual)
+    const hoje = new Date().toDateString();
+    if (!forcar) {
+        const ultima = localStorage.getItem(NOTIF_KEY);
+        if (ultima === hoje) return false;
+    }
+
+    // Prefere o Service Worker (obrigatório no Android/Chrome instalado)
+    try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && 'showNotification' in reg) {
+            await reg.showNotification(titulo, {
+                body: corpo,
+                icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+                badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+                tag: 'mercadinho-alerta',
+                renotify: false,
+                requireInteraction: false
+            });
+            localStorage.setItem(NOTIF_KEY, hoje);
+            return true;
+        }
+        // Fallback: API clássica (desktop)
+        new Notification(titulo, { body: corpo, tag: 'mercadinho-alerta' });
+        localStorage.setItem(NOTIF_KEY, hoje);
+        return true;
+    } catch (e) {
+        console.warn('Falha ao enviar notificação:', e);
+        return false;
+    }
+}
+
+async function verificarNotificacoes(forcar) {
+    if (!notifDisponivel() || Notification.permission !== 'granted') return;
+    if (produtos.length === 0) return;
+    const aviso = montarAviso();
+    if (!aviso) return;
+    await enviarNotificacao(aviso.titulo, aviso.corpo, forcar);
+}
+
 // ============ HELPERS ============
 function diasRestantes(iso) {
     const h = new Date(); h.setHours(0, 0, 0, 0);
@@ -328,6 +463,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         renderLista();
         renderStats();
         showToast('Alerta: ' + DIAS_ALERTA + ' dia(s)');
+        verificarNotificacoes(true);
     });
 
     // Modal de edição
@@ -341,6 +477,15 @@ document.addEventListener('DOMContentLoaded', () => { try {
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });
     document.getElementById('btnCloseInstall').addEventListener('click', () => document.getElementById('install-bar').classList.remove('show'));
 
-    setInterval(() => loadProdutos(), 86400000);
+    // Notificações do dispositivo
+    if (btnNotif) btnNotif.addEventListener('click', pedirPermissaoNotificacao);
+    atualizarUINotificacao();
+
+    // Verifica itens no prazo após carregar os dados
+    loadProdutos().then(() => verificarNotificacoes(false));
+
+    // Re-verifica 1x por dia (enquanto o app estiver aberto) e ao mudar o alerta
+    setInterval(() => verificarNotificacoes(false), 6 * 60 * 60 * 1000);
+    setInterval(() => loadProdutos().then(() => verificarNotificacoes(false)), 86400000);
   } catch (err) { console.error('Erro na inicializacao:', err); showToast('Erro na pagina: ' + err.message); }
 });
