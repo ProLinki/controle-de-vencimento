@@ -3,7 +3,6 @@
 // Integracao Supabase
 // ============================
 
-// >>> CONFIGURE AQUI SUA URL E CHAVE DO SUPABASE <<<
 const SUPABASE_URL = 'https://izfonjoluifotwxzleix.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Zm9uam9sdWlmb3R3eHpsZWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MDEwODAsImV4cCI6MjEwODk3NzA4MH0.A_o5OSNWKV8oKCO3y9P32XHJUn_G4ln4qmDzwqDD5Rc';
 
@@ -27,28 +26,35 @@ let supabase = null;
 let supabaseConfigurado = false;
 
 function initSupabase() {
+    console.log('Iniciando Supabase...');
+    console.log('URL:', SUPABASE_URL);
+    console.log('Key:', SUPABASE_ANON_KEY ? 'presente' : 'ausente');
+
     if (!SUPABASE_URL || SUPABASE_URL.includes('SUA_URL') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('SUA_CHAVE')) {
         supabaseConfigurado = false;
         supabase = null;
-        mostrarToast('Supabase nao configurado. Usando localStorage.');
+        mostrarToast('Supabase nao configurado.');
         return;
     }
 
     if (typeof window.supabase === 'undefined') {
         supabaseConfigurado = false;
         supabase = null;
-        mostrarToast('Biblioteca Supabase nao carregada.');
+        mostrarToast('Biblioteca Supabase nao carregou. Verifique internet.');
+        console.error('window.supabase nao definido');
         return;
     }
 
     try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         supabaseConfigurado = true;
+        console.log('Supabase inicializado com sucesso');
+        mostrarToast('Supabase conectado!');
     } catch (err) {
         console.error('Erro ao inicializar Supabase:', err);
         supabaseConfigurado = false;
         supabase = null;
-        mostrarToast('Erro ao conectar Supabase: ' + err.message);
+        mostrarToast('Erro Supabase: ' + (err.message || err));
     }
 }
 
@@ -87,7 +93,7 @@ async function carregarProdutos() {
         atualizarEstatisticas();
     } catch (err) {
         console.error(err);
-        mostrarToast('Erro ao carregar: ' + err.message);
+        mostrarToast('Erro carregar: ' + (err.message || err));
         const raw = localStorage.getItem('produtos_mercadinho');
         produtos = raw ? JSON.parse(raw) : [];
         renderizarLista();
@@ -96,10 +102,12 @@ async function carregarProdutos() {
 }
 
 async function salvarProduto(nome, quantidade, vencimento) {
-    try {
-        console.log('Tentando salvar:', nome, quantidade, vencimento);
-        console.log('Supabase configurado:', supabaseConfigurado);
+    console.log('=== SALVAR PRODUTO ===');
+    console.log('Nome:', nome, 'Qtd:', quantidade, 'Venc:', vencimento);
+    console.log('Supabase configurado:', supabaseConfigurado);
+    console.log('Supabase client:', supabase);
 
+    try {
         if (!supabaseConfigurado || !supabase) {
             const novoLote = { id: Date.now().toString(), quantidade: quantidade, vencimento: vencimento };
             const idx = produtos.findIndex(p => p.nome.toLowerCase() === nome.toLowerCase());
@@ -111,7 +119,7 @@ async function salvarProduto(nome, quantidade, vencimento) {
             localStorage.setItem('produtos_mercadinho', JSON.stringify(produtos));
             renderizarLista();
             atualizarEstatisticas();
-            mostrarToast('Lote adicionado (localStorage).');
+            mostrarToast('Salvo localmente (Supabase nao conectado).');
             return;
         }
 
@@ -126,10 +134,11 @@ async function salvarProduto(nome, quantidade, vencimento) {
 
         if (errBusca) {
             console.error('Erro busca produto:', errBusca);
+            mostrarToast('Erro busca produto: ' + (errBusca.message || errBusca));
+            return;
         }
 
         if (!prodExist || !prodExist.id) {
-            // Inserir novo produto
             const { data: novoProd, error: errInsert } = await supabase
                 .from('produtos')
                 .insert({ nome: nome })
@@ -316,6 +325,6 @@ function verificarNotificacoes() {
 function mostrarToast(mensagem) {
     toastEl.textContent = mensagem;
     toastEl.classList.add('show');
-    setTimeout(() => toastEl.classList.remove('show'), 4000);
+    setTimeout(() => toastEl.classList.remove('show'), 5000);
 }
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
