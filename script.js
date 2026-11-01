@@ -186,8 +186,11 @@ async function loadConfig() {
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.chave === 'dias_alerta' && row.valor) {
-                DIAS_ALERTA = parseInt(row.valor, 10) || DIAS_ALERTA;
-                localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
+                const v = parseInt(row.valor, 10);
+                if (!isNaN(v) && v >= 1) {
+                    DIAS_ALERTA = v;
+                    localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
+                }
             }
             if (row.chave === 'hora_notificacao' && row.valor) {
                 HORA_NOTIF = row.valor;
@@ -201,6 +204,9 @@ async function loadConfig() {
     if (diasAlertaLabel) diasAlertaLabel.textContent = DIAS_ALERTA;
     if (horaNotifInput) horaNotifInput.value = HORA_NOTIF;
     if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
+    window.DIAS_ALERTA = DIAS_ALERTA;
+    if (typeof renderLista === 'function') renderLista();
+    if (typeof renderStats === 'function') renderStats();
 }
 
 async function salvarConfigDias(v) {
