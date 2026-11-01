@@ -36,6 +36,7 @@ const diasDica = document.getElementById('dias-dica');
 const horaNotifInput = document.getElementById('horaNotif');
 const horaDica = document.getElementById('hora-dica');
 const toastEl = document.getElementById('toast');
+const vazio = document.getElementById('vazio');
 const modalOverlay = document.getElementById('modal-overlay');
 const modalProduto = document.getElementById('modal-produto');
 const editQtd = document.getElementById('edit-quantidade');
@@ -262,6 +263,9 @@ async function loadProdutos() {
     } catch (e) {
         showToast('Erro carregar: ' + e.message);
     }
+    console.log('loadProdutos DIAS_ALERTA=', DIAS_ALERTA, 'produtos=', produtos.length);
+    window.DIAS_ALERTA = DIAS_ALERTA;
+    window.produtos = produtos;
     renderLista();
     renderStats();
 }
@@ -1111,7 +1115,10 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // ===== NAVBAR / MENU =====
     function abrirMenu() { if (menuOverlay) menuOverlay.classList.add('show'); }
     function fecharMenu() { if (menuOverlay) menuOverlay.classList.remove('show'); }
-    if (btnMenu) btnMenu.addEventListener('click', abrirMenu);
+    if (btnMenu) {
+        btnMenu.onclick = function(e) { e.preventDefault(); abrirMenu(); };
+        btnMenu.addEventListener('click', abrirMenu);
+    }
     if (btnFecharMenu) btnFecharMenu.addEventListener('click', fecharMenu);
     if (menuOverlay) menuOverlay.addEventListener('click', e => { if (e.target === menuOverlay) fecharMenu(); });
 

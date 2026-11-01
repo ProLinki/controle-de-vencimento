@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=40">
+<link rel="stylesheet" href="style.css?v=42">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -35,7 +35,7 @@
 <!-- ===== NAVBAR / TOOLBAR ===== -->
 <header class="app-toolbar">
   <div class="toolbar-container">
-    <button type="button" id="btn-menu" class="btn-menu" aria-label="Menu">☰</button>
+    <button type="button" id="btn-menu" class="btn-menu" aria-label="Menu" onclick="(function(){var m=document.getElementById('menu-overlay'); if(m) m.classList.add('show');})()">☰</button>
     <h1 class="toolbar-title">Mercadinho Belo</h1>
   </div>
   <div id="menu-overlay" class="menu-overlay">
@@ -170,7 +170,7 @@
   </div>
 </div>
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
-<script src="script.js?v=40"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=36').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script src="script.js?v=42"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=38').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>
