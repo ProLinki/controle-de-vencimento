@@ -30,8 +30,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body {
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+body:has(.modal-overlay.show),
+body:has(.menu-overlay.show) {
+  overflow: hidden;
+}
   background: var(--md-bg);
   color: var(--md-on-surface);
   line-height: 1.5;
