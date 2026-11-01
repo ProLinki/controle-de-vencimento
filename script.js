@@ -21,14 +21,9 @@ const loginErro = document.getElementById('login-erro');
 const userChip = document.getElementById('user-chip');
 const userNome = document.getElementById('user-nome');
 const userCargo = document.getElementById('user-cargo');
-const btnSair = document.getElementById('btn-sair');
-const secCadastro = document.getElementById('sec-cadastro');
-const secFuncionarios = document.getElementById('sec-funcionarios');
 const formProduto = document.getElementById('formProduto');
-const listaProdutos = document.getElementById('lista-produtos');
 const vazio = document.getElementById('vazio');
 const inputBusca = document.getElementById('busca');
-const todayBadge = document.getElementById('today-badge');
 const statTotal = document.getElementById('statTotal');
 const statProximos = document.getElementById('statProximos');
 const statVencidos = document.getElementById('statVencidos');
@@ -51,6 +46,22 @@ const fnCargo = document.getElementById('fn-cargo');
 const fnBotao = document.getElementById('fn-botao');
 const fnCancelar = document.getElementById('fn-cancelar');
 const listaFuncionarios = document.getElementById('lista-funcionarios');
+
+// Navbar / menu
+const btnMenu = document.getElementById('btn-menu');
+const btnFecharMenu = document.getElementById('btn-fechar-menu');
+const menuOverlay = document.getElementById('menu-overlay');
+const menuCadastro = document.getElementById('menu-cadastro');
+const menuAlerta = document.getElementById('menu-alerta');
+const menuFuncionarios = document.getElementById('menu-funcionarios');
+const menuFuncionariosItem = document.getElementById('menu-funcionarios-item');
+const menuSair = document.getElementById('menu-sair');
+
+// Modais
+const modalCadastro = document.getElementById('modal-cadastro');
+const modalAlerta = document.getElementById('modal-alerta');
+const modalFuncionarios = document.getElementById('modal-funcionarios');
+const btnFecharAlerta = document.getElementById('btn-fechar-alerta');
 
 // ---------- HELPERS BÁSICOS ----------
 function showToast(msg) {
@@ -133,8 +144,7 @@ function aplicarPermissoes() {
     userNome.textContent = sessao.nome;
     userCargo.textContent = labelCargo(c);
     userCargo.className = 'cargo-badge cargo-' + c;
-    secCadastro.style.display = podeInserir() ? '' : 'none';
-    secFuncionarios.style.display = podeGerirFuncionarios() ? '' : 'none';
+    if (menuFuncionariosItem) menuFuncionariosItem.style.display = podeGerirFuncionarios() ? '' : 'none';
     diasAlertaInput.disabled = !podeConfigurarDias();
     diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
 }
@@ -705,7 +715,6 @@ async function iniciarApp() {
 
 document.addEventListener('DOMContentLoaded', () => { try {
     initSupabase();
-    if (todayBadge) todayBadge.textContent = 'Hoje: ' + fmtBR(new Date().toISOString().split('T')[0]);
 
     // Restaura sessão
     try {
@@ -724,19 +733,19 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     // Login
     formLogin.addEventListener('submit', entrar);
-    btnSair.addEventListener('click', sair);
 
     // Cadastro de item
-    formProduto.addEventListener('submit', e => {
+    formProduto.addEventListener('submit', async e => {
         e.preventDefault();
         const nome = document.getElementById('nome').value.trim();
         const qtd = parseInt(document.getElementById('quantidade').value, 10);
         const venc = document.getElementById('vencimento').value;
         if (!nome || !qtd || !venc) { showToast('Preencha todos os campos.'); return; }
-        saveProduto(nome, qtd, venc);
+        await saveProduto(nome, qtd, venc);
         formProduto.reset();
         document.getElementById('quantidade').value = 1;
         document.getElementById('vencimento').value = new Date().toISOString().split('T')[0];
+        if (modalCadastro) modalCadastro.classList.remove('show');
     });
 
     inputBusca.addEventListener('input', renderLista);
@@ -774,5 +783,38 @@ document.addEventListener('DOMContentLoaded', () => { try {
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });
     document.getElementById('btnCloseInstall').addEventListener('click', () => document.getElementById('install-bar').classList.remove('show'));
+
+    // ===== NAVBAR / MENU =====
+    function abrirMenu() { if (menuOverlay) menuOverlay.classList.add('show'); }
+    function fecharMenu() { if (menuOverlay) menuOverlay.classList.remove('show'); }
+    if (btnMenu) btnMenu.addEventListener('click', abrirMenu);
+    if (btnFecharMenu) btnFecharMenu.addEventListener('click', fecharMenu);
+    if (menuOverlay) menuOverlay.addEventListener('click', e => { if (e.target === menuOverlay) fecharMenu(); });
+
+    function abrirModalGenerico(m) { if (m) m.classList.add('show'); }
+    function fecharModalGenerico(m) { if (m) m.classList.remove('show'); }
+
+    if (menuCadastro) menuCadastro.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalCadastro); });
+    if (menuAlerta) menuAlerta.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalAlerta); });
+    if (menuFuncionarios) menuFuncionarios.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios(); });
+    if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
+
+    // Fechar modais ao clicar no overlay
+    if (modalCadastro) modalCadastro.addEventListener('click', e => { if (e.target === modalCadastro) fecharModalGenerico(modalCadastro); });
+    if (modalAlerta) modalAlerta.addEventListener('click', e => { if (e.target === modalAlerta) fecharModalGenerico(modalAlerta); });
+    if (modalFuncionarios) modalFuncionarios.addEventListener('click', e => { if (e.target === modalFuncionarios) fecharModalGenerico(modalFuncionarios); });
+
+    if (btnFecharAlerta) btnFecharAlerta.addEventListener('click', () => fecharModalGenerico(modalAlerta));
+
+    // ESC fecha modais
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (modalCadastro && modalCadastro.classList.contains('show')) fecharModalGenerico(modalCadastro);
+            if (modalAlerta && modalAlerta.classList.contains('show')) fecharModalGenerico(modalAlerta);
+            if (modalFuncionarios && modalFuncionarios.classList.contains('show')) fecharModalGenerico(modalFuncionarios);
+            fecharMenu();
+        }
+    });
+
   } catch (err) { console.error('Erro na inicializacao:', err); showToast('Erro na pagina: ' + err.message); }
 });

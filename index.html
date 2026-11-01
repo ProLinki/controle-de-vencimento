@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Mercadinho Belo - Controle</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=12">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -29,36 +29,47 @@
   </div>
 </div>
 
-<!-- ===== APLICATIVO ===== -->
-<header class="app-header"><div class="container"><h1>📦 Mercadinho Belo</h1><span class="subtitle">Controle de Vencimento</span><div id="today-badge" class="today-badge"></div><div id="user-chip" class="user-chip" style="display:none"><span class="nome" id="user-nome"></span><span id="user-cargo" class="cargo-badge"></span><button type="button" id="btn-sair" class="btn-sair">Sair</button></div></div></header>
+<!-- ===== NAVBAR / TOOLBAR ===== -->
+<header class="app-toolbar">
+  <div class="toolbar-container">
+    <button type="button" id="btn-menu" class="btn-menu" aria-label="Menu">☰</button>
+    <h1 class="toolbar-title">Mercadinho Belo</h1>
+    <div id="user-chip" class="user-chip" style="display:none">
+      <span class="nome" id="user-nome"></span>
+      <span id="user-cargo" class="cargo-badge"></span>
+    </div>
+  </div>
+  <div id="menu-overlay" class="menu-overlay">
+    <div class="menu-content">
+      <button type="button" id="btn-fechar-menu" class="btn-fechar-menu" aria-label="Fechar">✖</button>
+      <ul class="menu-lista">
+        <li><a href="#" id="menu-cadastro">➕ Cadastrar produto / lote</a></li>
+        <li><a href="#" id="menu-alerta">⚠️ Configuração de alerta</a></li>
+        <li id="menu-funcionarios-item" style="display:none"><a href="#" id="menu-funcionarios">👥 Funcionários</a></li>
+        <li><a href="#" id="menu-sair">🚪 Sair</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- ===== CONTEÚDO PRINCIPAL ===== -->
 <main class="container">
 
-<section class="card" id="sec-cadastro"><h2>Cadastrar Produto / Lote</h2><p class="sub">O mesmo produto pode ter vários lotes com datas diferentes.</p><form id="formProduto"><div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div><div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div><div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="vencimento" required></div><button type="submit" class="btn btn-success">Adicionar Lote</button></form></section>
+  <section class="card">
+    <div class="input-group search-group"><input type="text" id="busca" placeholder="Buscar produto..."></div>
+    <div id="lista-produtos" class="produto-lista"></div>
+    <div id="vazio" class="empty-state"><p>Nenhum lote cadastrado ainda.</p></div>
+  </section>
 
-<section class="card"><h2>Configuração de Alerta</h2><div class="input-group"><label>Exibir alerta quando faltar (dias)<span id="dias-dica" class="dica"></span></label><input type="number" id="diasAlerta" min="1" value="3"></div><div class="notif-box"><button type="button" id="btn-notif" class="btn btn-outline">🔔 Ativar notificações do dispositivo</button><p id="notif-status" class="notif-status">Receba um aviso no seu celular quando algum item estiver perto do vencimento.</p></div></section>
+  <section class="card stats">
+    <div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total de lotes</div></div>
+    <div class="stat-item alert"><div class="stat-number" id="statProximos">0</div><div class="stat-label">Vencem em até <span id="diasAlertaLabel">3</span> dia(s)</div></div>
+    <div class="stat-item danger"><div class="stat-number" id="statVencidos">0</div><div class="stat-label">Já venceram</div></div>
+  </section>
 
-<section class="card" id="sec-funcionarios" style="display:none"><h2>👥 Funcionários</h2><p class="sub">Adicione, edite ou remova quem acessa o sistema.</p>
-<form id="formFuncionario">
-<input type="hidden" id="fn-id">
-<div class="input-group"><label>Nome completo</label><input type="text" id="fn-nome" placeholder="Ex: Maria Souza" required></div>
-<div class="input-group"><label>Usuário (login)</label><input type="text" id="fn-login" autocomplete="off" placeholder="Ex: maria" required></div>
-<div class="input-group"><label>Senha</label><input type="password" id="fn-senha" autocomplete="new-password" placeholder="Mínimo 4 caracteres"></div>
-<div class="input-group"><label>Cargo</label><select id="fn-cargo">
-<option value="funcionario">Funcionário — insere e atualiza itens</option>
-<option value="patrao">Patrão — somente visualização e alertas</option>
-<option value="admin">Administrador — acesso total</option>
-</select></div>
-<button type="submit" class="btn btn-success" id="fn-botao">Adicionar funcionário</button>
-<button type="button" class="btn btn-outline" id="fn-cancelar" style="display:none">Cancelar edição</button>
-</form>
-<div id="lista-funcionarios" class="lista-funcionarios"></div>
-</section>
-
-<section class="card"><h2>Lotes por Vencimento</h2><div class="input-group search-group"><input type="text" id="busca" placeholder="Buscar produto..."></div><div id="lista-produtos" class="produto-lista"></div><div id="vazio" class="empty-state"><p>Nenhum lote cadastrado ainda.</p></div></section>
-
-<section class="card stats"><div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total de lotes</div></div><div class="stat-item alert"><div class="stat-number" id="statProximos">0</div><div class="stat-label">Vencem em até <span id="diasAlertaLabel">3</span> dia(s)</div></div><div class="stat-item danger"><div class="stat-number" id="statVencidos">0</div><div class="stat-label">Já venceram</div></div></section>
 </main>
 
+<!-- ===== MODAIS ===== -->
 <div id="modal-overlay" class="modal-overlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
     <h3 id="modal-titulo">Editar Lote</h3>
@@ -71,9 +82,56 @@
     </div>
   </div>
 </div>
+
+<div id="modal-alerta" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Configuração de Alerta</h3>
+    <p class="modal-sub">Defina quantos dias antes do vencimento o sistema deve avisar.</p>
+    <div class="input-group"><label>Exibir alerta quando faltar (dias)<span id="dias-dica" class="dica"></span></label><input type="number" id="diasAlerta" min="1" value="3"></div>
+    <div class="notif-box"><button type="button" id="btn-notif" class="btn btn-outline">🔔 Ativar notificações do dispositivo</button><p id="notif-status" class="notif-status">Receba um aviso no seu celular quando algum item estiver perto do vencimento.</p></div>
+    <div class="modal-acoes"><button type="button" id="btn-fechar-alerta" class="btn btn-success">Fechar</button></div>
+  </div>
+</div>
+
+<div id="modal-cadastro" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Cadastrar Produto / Lote</h3>
+    <p class="modal-sub">O mesmo produto pode ter vários lotes com datas diferentes.</p>
+    <form id="formProduto">
+      <div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div>
+      <div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div>
+      <div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="vencimento" required></div>
+      <div class="modal-acoes"><button type="submit" class="btn btn-success">Adicionar Lote</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-funcionarios" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Funcionários</h3>
+    <p class="modal-sub">Adicione, edite ou remova quem acessa o sistema.</p>
+    <form id="formFuncionario">
+      <input type="hidden" id="fn-id">
+      <div class="input-group"><label>Nome completo</label><input type="text" id="fn-nome" placeholder="Ex: Maria Souza" required></div>
+      <div class="input-group"><label>Usuário (login)</label><input type="text" id="fn-login" autocomplete="off" placeholder="Ex: maria" required></div>
+      <div class="input-group"><label>Senha</label><input type="password" id="fn-senha" autocomplete="new-password" placeholder="Deixe em branco para manter a senha"></div>
+      <div class="input-group"><label>Cargo</label><select id="fn-cargo">
+        <option value="funcionario">Funcionário — insere e atualiza itens</option>
+        <option value="patrao">Patrão — somente visualização e alertas</option>
+        <option value="admin">Administrador — acesso total</option>
+      </select></div>
+      <div class="modal-acoes">
+        <button type="submit" class="btn btn-success" id="fn-botao">Adicionar funcionário</button>
+        <button type="button" class="btn btn-outline" id="fn-cancelar" style="display:none">Cancelar edição</button>
+      </div>
+    </form>
+    <div id="lista-funcionarios" class="lista-funcionarios"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
-<script src="script.js?v=9"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=6').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script src="script.js?v=12"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=7').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>
