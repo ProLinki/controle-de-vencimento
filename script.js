@@ -1059,16 +1059,18 @@ document.addEventListener('DOMContentLoaded', () => { try {
     inputBusca.addEventListener('input', renderLista);
 
     // Menu Usuário
-    // Versão do último deploy
-    fetch('api/version').then(r => r.json()).then(d => {
-        const el = document.getElementById('app-version');
-        if (el && d && d.sha) el.textContent = 'Último deploy: ' + d.sha;
-    }).catch(() => {});
+    const menuUsuario = document.getElementById('menu-usuario');
     if (menuUsuario) menuUsuario.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalUsuario(); });
     const formUsuario = document.getElementById('formUsuario');
     if (formUsuario) formUsuario.addEventListener('submit', salvarUsuario);
     const modalUsuarioEl = document.getElementById('modal-usuario');
     if (modalUsuarioEl) modalUsuarioEl.addEventListener('click', e => { if (e.target === modalUsuarioEl) modalUsuarioEl.classList.remove('show'); });
+
+    // Versão do último deploy
+    fetch('api/version').then(r => r.json()).then(d => {
+        const el = document.getElementById('app-version');
+        if (el && d && d.sha) el.textContent = 'Último deploy: ' + d.sha;
+    }).catch(() => {});
 
     // Prazo de alerta (somente admin altera → vale para todos)
     diasAlertaInput.addEventListener('change', () => {
