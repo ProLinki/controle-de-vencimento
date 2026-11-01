@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -102,10 +102,29 @@
     <p class="modal-sub">O mesmo produto pode ter vários lotes com datas diferentes.</p>
     <form id="formProduto">
       <div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div>
+      <div class="input-group"><label>Unidade</label><select id="unidade" required><option value="litros">Litros</option><option value="gramas">Gramas</option></select></div>
+      <div class="input-group"><label>Valor da unidade (ex: 2)</label><input type="number" id="valor" min="0" step="0.001" value="1" required></div>
       <div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div>
+      <div class="input-group">
+        <label>Código de barras</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="codigoBarras" placeholder="Digite ou escaneie" style="flex:1">
+          <button type="button" id="btn-scan" class="btn btn-outline" style="width:auto;padding:8px 14px">📷 Escanear</button>
+        </div>
+      </div>
       <div class="input-group"><label>Data de vencimento deste lote</label><input type="date" id="vencimento" required></div>
       <div class="modal-acoes"><button type="submit" class="btn btn-success">Adicionar Lote</button></div>
     </form>
+  </div>
+</div>
+
+<div id="modal-scan" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Escanear Código de Barras</h3>
+    <p class="modal-sub">Aponte a câmera para o código de barras do produto.</p>
+    <video id="scan-video" autoplay playsinline style="width:100%;border-radius:12px;background:#000"></video>
+    <p id="scan-status" class="modal-sub" style="margin-top:8px">Iniciando câmera...</p>
+    <div class="modal-acoes"><button type="button" id="btn-fechar-scan" class="btn btn-outline">Fechar</button></div>
   </div>
 </div>
 
@@ -134,7 +153,7 @@
 
 <div id="toast" class="toast"></div>
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
-<script src="script.js?v=13"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=8').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script src="script.js?v=14"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=9').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>

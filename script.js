@@ -61,7 +61,15 @@ const menuSair = document.getElementById('menu-sair');
 const modalCadastro = document.getElementById('modal-cadastro');
 const modalAlerta = document.getElementById('modal-alerta');
 const modalFuncionarios = document.getElementById('modal-funcionarios');
+const modalScan = document.getElementById('modal-scan');
 const btnFecharAlerta = document.getElementById('btn-fechar-alerta');
+const btnScan = document.getElementById('btn-scan');
+const btnFecharScan = document.getElementById('btn-fechar-scan');
+const scanVideo = document.getElementById('scan-video');
+const scanStatus = document.getElementById('scan-status');
+const codigoBarrasInput = document.getElementById('codigoBarras');
+const unidadeInput = document.getElementById('unidade');
+const valorInput = document.getElementById('valor');
 
 // ---------- HELPERS BÁSICOS ----------
 function showToast(msg) {
@@ -186,16 +194,23 @@ async function loadProdutos() {
     try {
         const { data, error } = await sb
             .from('lotes')
-            .select('id, produto_id, quantidade, vencimento, adicionado_por, atualizado_por, atualizado_em, created_at, produtos(nome)')
+            .select('id, produto_id, quantidade, vencimento, codigo_barras, adicionado_por, atualizado_por, atualizado_em, created_at, produtos(nome, codigo_barras, unidade, valor)')
             .order('vencimento', { ascending: true });
         if (error) throw error;
 
         const map = {};
         (data || []).forEach(r => {
             const nm = r.produtos && r.produtos.nome ? r.produtos.nome : 'Sem nome';
-            if (!map[r.produto_id]) map[r.produto_id] = { id: r.produto_id, nome: nm, lotes: [] };
+            if (!map[r.produto_id]) map[r.produto_id] = {
+                id: r.produto_id, nome: nm,
+                codigoBarras: (r.produtos && r.produtos.codigo_barras) || r.codigo_barras || '',
+                unidade: (r.produtos && r.produtos.unidade) || '',
+                valor: (r.produtos && r.produtos.valor) != null ? r.produtos.valor : '',
+                lotes: []
+            };
             map[r.produto_id].lotes.push({
                 id: r.id, quantidade: r.quantidade, vencimento: r.vencimento,
+                codigoBarras: r.codigo_barras,
                 adicionado_por: r.adicionado_por, atualizado_por: r.atualizado_por,
                 atualizado_em: r.atualizado_em, created_at: r.created_at
             });
@@ -227,25 +242,53 @@ async function limparProdutosOrfaos(lotesAtuais) {
 }
 
 // ---------- SALVAR (junta nomes iguais) ----------
-async function saveProduto(nome, qtd, venc) {
+async function saveProduto(nome, unidade, valor, qtd, venc, codigoBarras) {
     if (!sbReady) { showToast('Supabase nao conectado.'); return; }
     if (!podeInserir()) { showToast('Sem permissão para inserir itens.'); return; }
     try {
-        const { data: prods, error: e0 } = await sb.from('produtos').select('id, nome');
+        const cb = (codigoBarras || '').trim();
+
+        // Salva/atualiza no catálogo por código de barras (auto-preenchimento futuro)
+        if (cb) {
+            const { error: ecat } = await sb.from('produtos_base').upsert({
+                codigo_barras: cb,
+                nome: nome.trim(),
+                unidade: unidade,
+                valor: parseFloat(valor)
+            });
+            if (ecat) console.warn('Catalogo:', ecat.message);
+        }
+
+        const { data: prods, error: e0 } = await sb.from('produtos').select('id, nome, codigo_barras');
         if (e0) throw e0;
 
-        const existente = (prods || []).find(p => normNome(p.nome) === normNome(nome));
+        let existente = null;
+        if (cb) existente = (prods || []).find(p => p.codigo_barras && p.codigo_barras === cb);
+        if (!existente) existente = (prods || []).find(p => normNome(p.nome) === normNome(nome));
+
         let pid;
         if (existente) {
             pid = existente.id;
+            // atualiza unidade/valor/codigo se mudaram
+            await sb.from('produtos').update({
+                codigo_barras: cb || existente.codigo_barras,
+                unidade: unidade,
+                valor: parseFloat(valor)
+            }).eq('id', pid);
         } else {
-            const { data: novo, error: e2 } = await sb.from('produtos').insert({ nome: nome.trim() }).select('id').single();
+            const { data: novo, error: e2 } = await sb.from('produtos').insert({
+                nome: nome.trim(),
+                codigo_barras: cb || null,
+                unidade: unidade,
+                valor: parseFloat(valor)
+            }).select('id').single();
             if (e2) throw e2;
             pid = novo.id;
         }
 
         const { error: e3 } = await sb.from('lotes').insert({
             produto_id: pid,
+            codigo_barras: cb || null,
             quantidade: parseInt(qtd, 10),
             vencimento: venc,
             adicionado_por: sessao.nome,
@@ -258,6 +301,76 @@ async function saveProduto(nome, qtd, venc) {
     } catch (e) {
         showToast('Erro salvar: ' + e.message);
     }
+}
+
+// ---------- CATÁLOGO POR CÓDIGO DE BARRAS ----------
+async function preencherDoCatalogo(cb) {
+    cb = (cb || '').trim();
+    if (!cb || !sbReady) return;
+    try {
+        const { data, error } = await sb.from('produtos_base').select('*').eq('codigo_barras', cb).maybeSingle();
+        if (error) throw error;
+        if (data) {
+            document.getElementById('nome').value = data.nome || '';
+            if (unidadeInput) unidadeInput.value = data.unidade || 'litros';
+            if (valorInput) valorInput.value = data.valor != null ? data.valor : 1;
+            showToast('Dados preenchidos do catálogo!');
+            return;
+        }
+        const { data: p } = await sb.from('produtos').select('nome, unidade, valor').eq('codigo_barras', cb).maybeSingle();
+        if (p) {
+            document.getElementById('nome').value = p.nome || '';
+            if (unidadeInput) unidadeInput.value = p.unidade || 'litros';
+            if (valorInput) valorInput.value = p.valor != null ? p.valor : 1;
+        }
+    } catch (e) { console.warn('Catalogo lookup:', e.message); }
+}
+
+let scanStream = null;
+let scanRAF = null;
+async function iniciarScan() {
+    if (scanStatus) scanStatus.textContent = 'Iniciando câmera...';
+    if (!('BarcodeDetector' in window)) {
+        if (scanStatus) scanStatus.textContent = 'Leitura por câmera não suportada neste navegador. Digite o código manualmente.';
+        return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (scanStatus) scanStatus.textContent = 'Câmera não disponível. Digite o código manualmente.';
+        return;
+    }
+    try {
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (scanVideo) { scanVideo.srcObject = scanStream; await scanVideo.play(); }
+        const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','qr_code'] });
+        if (scanStatus) scanStatus.textContent = 'Aponte para o código...';
+        const tick = async () => {
+            if (!scanStream) return;
+            try {
+                if (scanVideo && scanVideo.readyState >= 2) {
+                    const codes = await detector.detect(scanVideo);
+                    if (codes && codes.length) {
+                        const val = codes[0].rawValue;
+                        if (codigoBarrasInput) codigoBarrasInput.value = val;
+                        if (scanStatus) scanStatus.textContent = 'Lido: ' + val;
+                        await preencherDoCatalogo(val);
+                        pararScan();
+                        if (modalScan) modalScan.classList.remove('show');
+                        return;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            scanRAF = requestAnimationFrame(tick);
+        };
+        scanRAF = requestAnimationFrame(tick);
+    } catch (e) {
+        if (scanStatus) scanStatus.textContent = 'Erro ao acessar câmera: ' + e.message;
+    }
+}
+function pararScan() {
+    if (scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+    if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    if (scanVideo) scanVideo.srcObject = null;
 }
 
 // ---------- EXCLUIR LOTE (admin) ----------
@@ -640,6 +753,8 @@ function renderLista() {
             '<div class="produto-info">' +
             '<span>' + p.lotes.length + ' lote' + (p.lotes.length > 1 ? 's' : '') + '</span>' +
             '<span>Total: ' + totalQtd + ' un</span>' +
+            (p.unidade ? '<span>' + esc(p.valor) + ' ' + esc(p.unidade) + '</span>' : '') +
+            (p.codigoBarras ? '<span>Cód: ' + esc(p.codigoBarras) + '</span>' : '') +
             '</div>';
         card.appendChild(head);
 
@@ -738,12 +853,17 @@ document.addEventListener('DOMContentLoaded', () => { try {
     formProduto.addEventListener('submit', async e => {
         e.preventDefault();
         const nome = document.getElementById('nome').value.trim();
+        const unidade = document.getElementById('unidade').value;
+        const valor = document.getElementById('valor').value;
         const qtd = parseInt(document.getElementById('quantidade').value, 10);
+        const cb = document.getElementById('codigoBarras').value.trim();
         const venc = document.getElementById('vencimento').value;
-        if (!nome || !qtd || !venc) { showToast('Preencha todos os campos.'); return; }
-        await saveProduto(nome, qtd, venc);
+        if (!nome || !qtd || !venc || !unidade || !valor) { showToast('Preencha todos os campos.'); return; }
+        await saveProduto(nome, unidade, valor, qtd, venc, cb);
         formProduto.reset();
         document.getElementById('quantidade').value = 1;
+        document.getElementById('valor').value = 1;
+        document.getElementById('unidade').value = 'litros';
         document.getElementById('vencimento').value = new Date().toISOString().split('T')[0];
         if (modalCadastro) modalCadastro.classList.remove('show');
     });
@@ -799,6 +919,15 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (menuFuncionarios) menuFuncionarios.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios(); });
     if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
 
+    // Código de barras: lookup ao sair do campo
+    if (codigoBarrasInput) {
+        codigoBarrasInput.addEventListener('change', () => preencherDoCatalogo(codigoBarrasInput.value));
+        codigoBarrasInput.addEventListener('blur', () => preencherDoCatalogo(codigoBarrasInput.value));
+    }
+    if (btnScan) btnScan.addEventListener('click', () => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    if (btnFecharScan) btnFecharScan.addEventListener('click', () => { pararScan(); if (modalScan) modalScan.classList.remove('show'); });
+    if (modalScan) modalScan.addEventListener('click', e => { if (e.target === modalScan) { pararScan(); modalScan.classList.remove('show'); } });
+
     // Fechar modais ao clicar no overlay
     if (modalCadastro) modalCadastro.addEventListener('click', e => { if (e.target === modalCadastro) fecharModalGenerico(modalCadastro); });
     if (modalAlerta) modalAlerta.addEventListener('click', e => { if (e.target === modalAlerta) fecharModalGenerico(modalAlerta); });
@@ -811,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (e.key === 'Escape') {
             if (modalCadastro && modalCadastro.classList.contains('show')) fecharModalGenerico(modalCadastro);
             if (modalAlerta && modalAlerta.classList.contains('show')) fecharModalGenerico(modalAlerta);
-            if (modalFuncionarios && modalFuncionarios.classList.contains('show')) fecharModalGenerico(modalFuncionarios);
+            if (modalScan && modalScan.classList.contains('show')) { pararScan(); modalScan.classList.remove('show'); }
             fecharMenu();
         }
     });

@@ -1,6 +1,7 @@
 -- ============================================================
 -- Mercadinho Belo - Controle
--- Migração: sistema de usuários, auditoria e configuração global
+-- Migração: sistema de usuários, auditoria, configuração global
+-- + catálogo por código de barras (litros/gramas)
 -- Cole tudo no SQL Editor do Supabase e clique em RUN
 -- ============================================================
 
@@ -15,7 +16,6 @@ CREATE TABLE IF NOT EXISTS funcionarios (
   ativo BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 ALTER TABLE funcionarios ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   CREATE POLICY "Permitir tudo" ON funcionarios FOR ALL USING (true) WITH CHECK (true);
@@ -27,13 +27,31 @@ ALTER TABLE lotes ADD COLUMN IF NOT EXISTS adicionado_por_id UUID;
 ALTER TABLE lotes ADD COLUMN IF NOT EXISTS atualizado_por TEXT;
 ALTER TABLE lotes ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP WITH TIME ZONE;
 
--- 3) Configuração global (dias de alerta controlados pelo admin) --
+-- 3) Campos de unidade (litros/gramas) e código de barras nos produtos --
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS codigo_barras TEXT;
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS unidade TEXT;       -- 'litros' ou 'gramas'
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS valor NUMERIC;      -- quantidade da unidade (ex: 2 litros)
+ALTER TABLE lotes ADD COLUMN IF NOT EXISTS codigo_barras TEXT;
+
+-- 4) Catálogo por código de barras (versão para auto-preenchimento) --
+CREATE TABLE IF NOT EXISTS produtos_base (
+  codigo_barras TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  unidade TEXT NOT NULL,        -- 'litros' ou 'gramas'
+  valor NUMERIC NOT NULL,       -- ex: 2 (litros)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE produtos_base ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Permitir tudo" ON produtos_base FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 5) Configuração global (dias de alerta controlados pelo admin) --
 CREATE TABLE IF NOT EXISTS configuracoes (
   chave TEXT PRIMARY KEY,
   valor TEXT NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   CREATE POLICY "Permitir tudo" ON configuracoes FOR ALL USING (true) WITH CHECK (true);
@@ -43,9 +61,7 @@ INSERT INTO configuracoes (chave, valor, updated_at)
 VALUES ('dias_alerta', '3', NOW())
 ON CONFLICT (chave) DO NOTHING;
 
--- 4) Administrador inicial ------------------------------------
--- Login: admin    Senha: admin123
--- (guardado como SHA-256 com salt — texto puro nunca é salvo)
+-- 6) Administrador inicial ------------------------------------
 INSERT INTO funcionarios (nome, login, senha_hash, salt, cargo, ativo)
 VALUES (
   'Administrador',
@@ -58,7 +74,5 @@ VALUES (
 ON CONFLICT (login) DO NOTHING;
 
 -- ============================================================
--- FIM — conferindo:
--- SELECT * FROM funcionarios;
--- SELECT * FROM configuracoes;
+-- FIM
 -- ============================================================
