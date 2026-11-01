@@ -76,7 +76,7 @@ body {
 .toolbar-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--md-on-secondary);
+  color: #d4a300;
   margin: 0;
   flex: 1;
   letter-spacing: 0.2px;
@@ -268,7 +268,7 @@ body {
 
 /* ===== CHIP DO USUÁRIO ===== */
 .user-chip { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.user-chip .nome { font-size: 0.82rem; font-weight: 600; color: var(--md-on-secondary); }
+.user-chip .nome { font-size: 0.82rem; font-weight: 600; color: var(--md-on-surface); }
 .cargo-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: var(--md-radius-sm); border: 1px solid; }
 .cargo-admin { background: #FDECEA; color: var(--md-error); border-color: #F5C6C7; }
 .cargo-funcionario { background: #E8F5E9; color: var(--md-success); border-color: #C7E3D6; }
