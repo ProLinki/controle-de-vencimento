@@ -167,7 +167,7 @@ function aplicarPermissoes() {
             menuFuncionariosItem.remove();
         }
     }
-    diasAlertaInput.disabled = !podeConfigurarDias();
+    if (diasAlertaInput) diasAlertaInput.disabled = !podeConfigurarDias();
     if (horaNotifInput) horaNotifInput.disabled = !podeConfigurarDias();
     diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
     if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
@@ -192,7 +192,7 @@ async function loadConfig() {
     } catch (e) {
         console.warn('Config não carregada:', e.message);
     }
-    diasAlertaInput.value = DIAS_ALERTA;
+    if (diasAlertaInput) diasAlertaInput.value = DIAS_ALERTA;
     diasAlertaLabel.textContent = DIAS_ALERTA;
     if (horaNotifInput) horaNotifInput.value = HORA_NOTIF;
     if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
@@ -1077,17 +1077,19 @@ document.addEventListener('DOMContentLoaded', () => { try {
     }).catch(() => {});
 
     // Prazo de alerta (somente admin altera → vale para todos)
-    diasAlertaInput.addEventListener('change', () => {
-        if (!podeConfigurarDias()) return;
-        const v = parseInt(diasAlertaInput.value, 10) || 1;
-        DIAS_ALERTA = v;
-        localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
-        diasAlertaLabel.textContent = DIAS_ALERTA;
-        renderLista();
-        renderStats();
-        salvarConfigDias(v);
-        verificarNotificacoes(true);
-    });
+    if (diasAlertaInput) {
+        diasAlertaInput.addEventListener('change', () => {
+            if (!podeConfigurarDias()) { showToast('Somente o administrador altera esta configuração.'); loadConfig(); return; }
+            const v = parseInt(diasAlertaInput.value, 10) || 1;
+            DIAS_ALERTA = v;
+            localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
+            if (diasAlertaLabel) diasAlertaLabel.textContent = DIAS_ALERTA;
+            renderLista();
+            renderStats();
+            salvarConfigDias(v);
+            verificarNotificacoes(true);
+        });
+    }
 
     // Modal de edição
     document.getElementById('modal-salvar').addEventListener('click', salvarEdicao);
