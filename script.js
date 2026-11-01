@@ -1133,6 +1133,32 @@ document.addEventListener('DOMContentLoaded', () => { try {
         btnMenu.onclick = function(e) { e.preventDefault(); abrirMenu(); };
         btnMenu.addEventListener('click', abrirMenu);
     }
+
+    // Abre o drawer arrastando da lateral esquerda (touch); fecha deslizando à esquerda
+    (function gestureDrawer() {
+        let startX = 0, startY = 0, tracking = false, swiping = false;
+        const EDGE = 28;      // borda esquerda em px
+        const THRESHOLD = 60; // arrasto mínimo para abrir
+        document.addEventListener('touchstart', e => {
+            if (e.touches.length !== 1) return;
+            const t = e.touches[0];
+            const menuAberto = menuOverlay && menuOverlay.classList.contains('show');
+            if (!menuAberto && t.clientX <= EDGE) { tracking = true; swiping = false; startX = t.clientX; startY = t.clientY; }
+            else if (menuAberto) { tracking = true; swiping = false; startX = t.clientX; startY = t.clientY; }
+        }, { passive: true });
+        document.addEventListener('touchmove', e => {
+            if (!tracking) return;
+            const t = e.touches[0];
+            const dx = t.clientX - startX, dy = Math.abs(t.clientY - startY);
+            if (!swiping && Math.abs(dx) > THRESHOLD && dy < Math.abs(dx) * 0.6) swiping = true;
+            if (swiping) {
+                if (dx > THRESHOLD && !(menuOverlay && menuOverlay.classList.contains('show'))) { abrirMenu(); tracking = false; }
+                else if (dx < -THRESHOLD && menuOverlay && menuOverlay.classList.contains('show') && startX > 120) { fecharMenu(); tracking = false; }
+            }
+        }, { passive: true });
+        document.addEventListener('touchend', () => { tracking = false; swiping = false; }, { passive: true });
+    })();
+
     if (btnFecharMenu) btnFecharMenu.addEventListener('click', fecharMenu);
     if (menuOverlay) menuOverlay.addEventListener('click', e => { if (e.target === menuOverlay) fecharMenu(); });
 
