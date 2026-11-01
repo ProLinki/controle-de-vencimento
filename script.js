@@ -155,10 +155,9 @@ function sair() {
 
 function aplicarPermissoes() {
     const c = sessao.cargo;
-    userChip.style.display = 'flex';
-    userNome.textContent = sessao.nome;
-    userCargo.textContent = labelCargo(c);
-    userCargo.className = 'cargo-badge cargo-' + c;
+    if (userChip) userChip.style.display = 'flex';
+    if (userNome) userNome.textContent = sessao.nome;
+    if (userCargo) { userCargo.textContent = labelCargo(c); userCargo.className = 'cargo-badge cargo-' + c; }
     if (menuFuncionariosItem) {
         if (podeGerirFuncionarios()) {
             menuFuncionariosItem.style.display = '';
@@ -167,9 +166,15 @@ function aplicarPermissoes() {
             menuFuncionariosItem.remove();
         }
     }
-    if (diasAlertaInput) diasAlertaInput.disabled = !podeConfigurarDias();
-    if (horaNotifInput) horaNotifInput.disabled = !podeConfigurarDias();
-    diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
+    if (diasAlertaInput) {
+        diasAlertaInput.disabled = !podeConfigurarDias();
+        if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
+    }
+    if (horaNotifInput) {
+        horaNotifInput.disabled = !podeConfigurarDias();
+        if (!podeConfigurarDias()) horaNotifInput.readOnly = true;
+    }
+    if (diasDica) diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
     if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
 }
 
@@ -193,7 +198,7 @@ async function loadConfig() {
         console.warn('Config não carregada:', e.message);
     }
     if (diasAlertaInput) diasAlertaInput.value = DIAS_ALERTA;
-    diasAlertaLabel.textContent = DIAS_ALERTA;
+    if (diasAlertaLabel) diasAlertaLabel.textContent = DIAS_ALERTA;
     if (horaNotifInput) horaNotifInput.value = HORA_NOTIF;
     if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
 }
@@ -1003,6 +1008,7 @@ function renderStats() {
 async function iniciarApp() {
     aplicarPermissoes();
     await loadConfig();
+    aplicarPermissoes();
     if (podeConfigurarDias()) salvarTzOffset();
     await loadProdutos();
     if (podeGerirFuncionarios()) await loadFuncionarios();
@@ -1053,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     // Horário de notificação (admin)
     if (horaNotifInput) horaNotifInput.addEventListener('change', () => {
-        if (!podeConfigurarDias()) return;
+        if (!podeConfigurarDias()) { showToast('Somente o administrador altera esta configuração.'); loadConfig(); aplicarPermissoes(); return; }
         const v = horaNotifInput.value || '08:00';
         HORA_NOTIF = v;
         localStorage.setItem(HORA_KEY, HORA_NOTIF);
@@ -1079,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Prazo de alerta (somente admin altera → vale para todos)
     if (diasAlertaInput) {
         diasAlertaInput.addEventListener('change', () => {
-            if (!podeConfigurarDias()) { showToast('Somente o administrador altera esta configuração.'); loadConfig(); return; }
+            if (!podeConfigurarDias()) { showToast('Somente o administrador altera esta configuração.'); loadConfig(); aplicarPermissoes(); return; }
             const v = parseInt(diasAlertaInput.value, 10) || 1;
             DIAS_ALERTA = v;
             localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
