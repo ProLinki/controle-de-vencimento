@@ -1,22 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="110" fill="#1a1a1a"/>
-  <!-- folha -->
-  <path d="M298 44 C 350 46 380 88 370 138 C 318 132 292 94 298 44 Z" fill="#FFC72C"/>
-  <path d="M308 132 C 314 98 330 76 352 62" stroke="#1a1a1a" stroke-width="12" fill="none" stroke-linecap="round"/>
-  <!-- coração -->
-  <path d="M256 470 C 196 412 116 348 116 246 C 116 180 168 146 220 146 C 242 146 252 156 256 164 C 260 156 270 146 292 146 C 344 146 396 180 396 246 C 396 348 316 412 256 470 Z" fill="#FFC72C"/>
-  <!-- pontinho branco -->
-  <circle cx="182" cy="182" r="11" fill="#FFFFFF"/>
-  <!-- carrinho -->
-  <g stroke="#FFFFFF" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M160 204 h 26 l 22 108 h 138"/>
-    <path d="M196 204 h 168 l -20 96 h -136 z"/>
-    <path d="M262 204 v 96"/>
-    <path d="M326 204 v 96"/>
-    <path d="M204 252 h 158"/>
-  </g>
-  <g stroke="#FFFFFF" stroke-width="13" fill="none">
-    <circle cx="234" cy="348" r="17"/>
-    <circle cx="322" cy="348" r="17"/>
-  </g>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <title>Coração com Carrinho de Compras Vetorial</title>
+    <defs>
+        <path d="M256,480.1 C249.4,480.1 243.2,477.3 238.8,472.5 L69.9,291.5 C25.3,243.3 12.8,181 35.8,124.6 C58.8,68.2 110,31.9 171.7,31.9 C204.6,31.9 235.3,42.6 256,62 C276.7,42.6 307.4,31.9 340.3,31.9 C402,31.9 453.2,68.2 476.2,124.6 C499.2,181 486.7,243.3 442.1,291.5 L273.2,472.5 C268.8,477.3 262.6,480.1 256,480.1 Z" id="heartPath"></path>
+    </defs>
+    <rect width="512" height="512" rx="110" fill="#1a1a1a"/>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group">
+            <!-- Camada de sombra projetada (opcional, remova se quiser o ícone plano) -->
+            <path d="M273.2,472.5 L442.1,291.5 C486.7,243.3 499.2,181 476.2,124.6 C453.2,68.2 402,31.9 340.3,31.9 C307.4,31.9 276.7,42.6 256,62 L256,480.1 C262.6,480.1 268.8,477.3 273.2,472.5 Z" id="heartShadow" fill="#E6A100" opacity="0.1" fill-rule="nonzero"></path>
+            
+            <!-- Forma Principal do Coração -->
+            <use id="heartColor" fill="#E6A100" fill-rule="nonzero"></use>
+            
+            <!-- Folhas do Coração -->
+            <path d="M256,31.9 C241.2,31.9 229,19.7 229,4.9 C229,-10 241.2,-22.2 256,-22.2 C270.8,-22.2 283,-10 283,4.9 C283,19.7 270.8,31.9 256,31.9 Z M171.7,31.9 C156.9,31.9 144.7,19.7 144.7,4.9 C144.7,-10 156.9,-22.2 171.7,-22.2 C186.5,-22.2 198.7,-10 198.7,4.9 C198.7,19.7 186.5,31.9 171.7,31.9 Z" id="leafShadow" fill="#E6A100" opacity="0.1" fill-rule="nonzero"></path>
+            <path d="M256,4.9 C241.2,4.9 229,17.1 229,31.9 L283,31.9 C283,17.1 270.8,4.9 256,4.9 Z M171.7,4.9 C156.9,4.9 144.7,17.1 144.7,31.9 L198.7,31.9 C198.7,17.1 186.5,4.9 171.7,4.9 Z" id="leafPath" fill="#E6A100" fill-rule="nonzero"></path>
+
+            <!-- Carrinho de Compras Branco -->
+            <g id="ShoppingCart" transform="translate(142.000000, 183.000000)" fill="#FFFFFF">
+                <path d="M228,30 L210,30 L166.4,124.7 C164,130 158.8,133.3 153.2,133.3 L58.8,133.3 C53.2,133.3 48,130 45.6,124.7 L14,56 L30,56 L55.6,111.3 L150.4,111.3 L188,30 L6,30 C2.7,30 0,27.3 0,24 C0,20.7 2.7,18 6,18 L197,18 C200.3,18 203,20.7 203,24 C203,27.3 200.3,30 197,30 L188,30 C191.3,30 194,32.7 194,36 C194,39.3 191.3,42 188,42 L180.3,58.7 C182.5,61.9 183.7,65.8 183.7,70 C183.7,78.8 176.6,86 167.7,86 L58.3,86 C49.4,86 42.3,78.8 42.3,70 C42.3,65.8 43.5,61.9 45.7,58.7 L38,42 L6,42 C2.7,42 0,39.3 0,36 C0,32.7 2.7,30 6,30 L188,30 Z M58.3,103.3 L167.7,103.3 L211.3,10.7 C213.7,5.4 218.9,2.1 224.5,2.1 L234,2.1 C237.3,2.1 240,4.8 240,8.1 C240,11.4 237.3,14.1 234,14.1 L224.5,14.1 L180.9,108.8 C178.5,114.1 173.3,117.4 167.7,117.4 L58.3,117.4 C52.7,117.4 47.5,114.1 45.1,108.8 L1,14.1 L1,14.1 L1,14.1 Z M48,70 C48,75.7 52.6,80.3 58.3,80.3 L167.7,80.3 C173.4,80.3 178,75.7 178,70 C178,64.3 173.4,59.7 167.7,59.7 L58.3,59.7 C52.6,59.7 48,64.3 48,70 Z" id="cartStructure" fill-rule="nonzero"></path>
+                <!-- Rodas do Carrinho -->
+                <circle id="wheel1" cx="62" cy="151.3" r="18"></circle>
+                <circle id="wheel2" cx="166" cy="151.3" r="18"></circle>
+            </g>
+        </g>
+    </g>
 </svg>
