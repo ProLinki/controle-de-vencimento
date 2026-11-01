@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=51">
+  <link rel="stylesheet" href="style.css?v=52">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -39,24 +39,25 @@
     <h1 class="toolbar-title">M.E.F.O. Belo</h1>
     <div class="toolbar-spacer"></div>
   </div>
-  <!-- DRAWER -->
-  <div id="menu-overlay" class="menu-overlay">
-    <div class="menu-content">
-      <div class="menu-topo">
-        <span class="menu-titulo">Menu de Opções</span>
-        <button type="button" id="btn-fechar-menu" class="btn-fechar-menu" aria-label="Fechar">✕</button>
-      </div>
-      <ul class="menu-lista">
-        <li><a href="#" id="menu-cadastro">➕ Cadastrar produto / lote</a></li>
-        <li><a href="#" id="menu-alerta">⚠️ Configuração de alerta</a></li>
-        <li id="menu-funcionarios-item" style="display:none"><a href="#" id="menu-funcionarios">👥 Funcionários</a></li>
-        <li><a href="#" id="menu-usuario">👤 Usuário</a></li>
-        <li><a href="#" id="menu-sair" class="menu-sair">🚪 Sair</a></li>
-      </ul>
-      <div id="app-version" class="app-version">Último deploy: carregando...</div>
-    </div>
-  </div>
 </header>
+
+<!-- DRAWER (fora do header para o position:fixed cobrir a tela inteira) -->
+<div id="menu-overlay" class="menu-overlay">
+  <div class="menu-content">
+    <div class="menu-topo">
+      <span class="menu-titulo">Menu de Opções</span>
+      <button type="button" id="btn-fechar-menu" class="btn-fechar-menu" aria-label="Fechar">✕</button>
+    </div>
+    <ul class="menu-lista">
+      <li><a href="#" id="menu-cadastro">➕ Cadastrar produto / lote</a></li>
+      <li><a href="#" id="menu-alerta">⚠️ Configuração de alerta</a></li>
+      <li id="menu-funcionarios-item" style="display:none"><a href="#" id="menu-funcionarios">👥 Funcionários</a></li>
+      <li><a href="#" id="menu-usuario">👤 Usuário</a></li>
+      <li><a href="#" id="menu-sair" class="menu-sair">🚪 Sair</a></li>
+    </ul>
+    <div id="app-version" class="app-version">Último deploy: carregando...</div>
+  </div>
+</div>
 
 <!-- ===== CONTEÚDO PRINCIPAL ===== -->
 <main class="container">
@@ -182,6 +183,6 @@
 <div id="toast" class="toast"></div>
 
 <script src="script.js?v=47"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=47').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=48').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>

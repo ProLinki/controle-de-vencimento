@@ -403,9 +403,11 @@ body {
   backdrop-filter: blur(4px);
   display: flex; z-index: 1500;
   opacity: 0; pointer-events: none;
-  transition: opacity 0.3s ease;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  touch-action: none;
 }
-.menu-overlay.show { opacity: 1; pointer-events: auto; }
+.menu-overlay.show { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity 0.3s ease, visibility 0s; }
 .menu-content {
   background: var(--bg-card);
   border-right: 1px solid var(--border-subtle);
