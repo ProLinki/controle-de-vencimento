@@ -932,7 +932,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     setInterval(() => verificarNotificacoes(false), 6 * 60 * 60 * 1000);
     setInterval(() => { if (sessao) loadProdutos().then(() => verificarNotificacoes(false)); }, 86400000);
 
-    // Instalação PWA
+    const fab = document.getElementById('fab-cadastrar');
+    if (fab) fab.addEventListener('click', () => { limparFormCadastro(); if (modalCadastro) modalCadastro.classList.add('show'); });
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });

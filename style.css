@@ -330,7 +330,19 @@ body {
 .install-bar.show { opacity: 1; pointer-events: auto; }
 .install-bar span { font-size: 0.82rem; color: var(--md-on-surface-variant); }
 .install-bar .btn { width: auto; padding: 8px 16px; font-size: 0.82rem; display: inline-block; border-radius: var(--md-radius-xl); }
-.install-bar .btn-outline { padding: 8px 12px; }
+.fab {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--md-primary); color: var(--md-on-primary);
+  border: none; font-size: 2rem; line-height: 1;
+  box-shadow: var(--md-elev-3);
+  cursor: pointer; z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.fab:hover { transform: scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.25); }
+.fab:active { transform: scale(0.95); }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 380px) {
