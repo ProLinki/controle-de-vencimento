@@ -1,10 +1,13 @@
 const SUPABASE_URL = 'https://izfonjoluifotwxzleix.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Zm9uam9sdWlmb3R3eHpsZWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MDEwODAsImV4cCI6MjEwODk3NzA4MH0.A_o5OSNWKV8oKCO3y9P32XHJUn_G4ln4qmDzwqDD5Rc';
 const DIAS_KEY = 'dias_alerta_mercadinho';
+const HORA_KEY = 'hora_notif_mercadinho';
 const SESSAO_KEY = 'sessao_mercadinho';
 const NOTIF_KEY = 'notificacao_diaria_mercadinho';
+const NOTIF_HORA_KEY = 'notificacao_hora_mercadinho';
 
 let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY), 10) || 3;
+let HORA_NOTIF = localStorage.getItem(HORA_KEY) || '08:00';
 let produtos = [];
 let sb = null;
 let sbReady = false;
@@ -30,6 +33,8 @@ const statVencidos = document.getElementById('statVencidos');
 const diasAlertaInput = document.getElementById('diasAlerta');
 const diasAlertaLabel = document.getElementById('diasAlertaLabel');
 const diasDica = document.getElementById('dias-dica');
+const horaNotifInput = document.getElementById('horaNotif');
+const horaDica = document.getElementById('hora-dica');
 const toastEl = document.getElementById('toast');
 const modalOverlay = document.getElementById('modal-overlay');
 const modalProduto = document.getElementById('modal-produto');
@@ -154,24 +159,34 @@ function aplicarPermissoes() {
     userCargo.className = 'cargo-badge cargo-' + c;
     if (menuFuncionariosItem) menuFuncionariosItem.style.display = podeGerirFuncionarios() ? '' : 'none';
     diasAlertaInput.disabled = !podeConfigurarDias();
+    if (horaNotifInput) horaNotifInput.disabled = !podeConfigurarDias();
     diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
+    if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
 }
 
 // ---------- CONFIGURAÇÃO GLOBAL (dias de alerta) ----------
 async function loadConfig() {
     if (!sbReady) return;
     try {
-        const { data, error } = await sb.from('configuracoes').select('valor').eq('chave', 'dias_alerta').maybeSingle();
+        const { data, error } = await sb.from('configuracoes').select('chave, valor');
         if (error) throw error;
-        if (data && data.valor) {
-            DIAS_ALERTA = parseInt(data.valor, 10) || DIAS_ALERTA;
-            localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
-        }
+        (data || []).forEach(row => {
+            if (row.chave === 'dias_alerta' && row.valor) {
+                DIAS_ALERTA = parseInt(row.valor, 10) || DIAS_ALERTA;
+                localStorage.setItem(DIAS_KEY, DIAS_ALERTA);
+            }
+            if (row.chave === 'hora_notificacao' && row.valor) {
+                HORA_NOTIF = row.valor;
+                localStorage.setItem(HORA_KEY, HORA_NOTIF);
+            }
+        });
     } catch (e) {
         console.warn('Config não carregada:', e.message);
     }
     diasAlertaInput.value = DIAS_ALERTA;
     diasAlertaLabel.textContent = DIAS_ALERTA;
+    if (horaNotifInput) horaNotifInput.value = HORA_NOTIF;
+    if (horaDica) horaDica.textContent = podeConfigurarDias() ? ' (você define o horário de todos)' : ' (definido pelo administrador)';
 }
 
 async function salvarConfigDias(v) {
@@ -188,7 +203,19 @@ async function salvarConfigDias(v) {
     }
 }
 
-// ---------- CARREGAR ITENS ----------
+async function salvarConfigHora(v) {
+    try {
+        const { error } = await sb.from('configuracoes').upsert({
+            chave: 'hora_notificacao',
+            valor: v,
+            updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        showToast('Horário de notificação atualizado: ' + v);
+    } catch (e) {
+        showToast('Erro ao salvar horário: ' + e.message);
+    }
+}
 async function loadProdutos() {
     if (!sbReady) { renderLista(); renderStats(); return; }
     try {
@@ -718,7 +745,36 @@ async function verificarNotificacoes(forcar) {
     await enviarNotificacao(aviso.titulo, aviso.corpo, forcar);
 }
 
-// ---------- CÁLCULOS E RENDER ----------
+function montarAvisoVencidos() {
+    const itens = [];
+    produtos.forEach(p => p.lotes.forEach(l => {
+        const d = diasRestantes(l.vencimento);
+        if (d < 0) itens.push({ nome: p.nome, dias: d });
+    }));
+    if (itens.length === 0) return null;
+    itens.sort((a, b) => a.dias - b.dias);
+    const linhas = itens.slice(0, 8).map(i => '• ' + i.nome + ' — vencido há ' + Math.abs(i.dias) + ' dia(s)');
+    if (itens.length > 8) linhas.push('… e mais ' + (itens.length - 8) + ' item(ns)');
+    return { titulo: '⚠️ ' + itens.length + ' item(ns) vencido(s)', corpo: linhas.join('\n'), total: itens.length };
+}
+
+async function verificarNotificacaoHorario() {
+    if (!sessao) return;
+    if (!notifDisponivel() || Notification.permission !== 'granted') return;
+    if (produtos.length === 0) return;
+    const agora = new Date();
+    const hh = String(agora.getHours()).padStart(2, '0');
+    const mm = String(agora.getMinutes()).padStart(2, '0');
+    const atual = hh + ':' + mm;
+    if (atual !== HORA_NOTIF) return;
+    const hoje = new Date().toDateString();
+    const ultima = localStorage.getItem(NOTIF_HORA_KEY);
+    if (ultima === hoje) return;
+    const aviso = montarAvisoVencidos();
+    if (!aviso) return;
+    const ok = await enviarNotificacao(aviso.titulo, aviso.corpo, true);
+    if (ok) localStorage.setItem(NOTIF_HORA_KEY, hoje);
+}
 function diasRestantes(iso) {
     const h = new Date(); h.setHours(0, 0, 0, 0);
     const a = new Date(iso); a.setHours(0, 0, 0, 0);
@@ -867,6 +923,7 @@ async function iniciarApp() {
     if (podeGerirFuncionarios()) await loadFuncionarios();
     atualizarUINotificacao();
     verificarNotificacoes(false);
+    verificarNotificacaoHorario();
 }
 
 document.addEventListener('DOMContentLoaded', () => { try {
@@ -905,7 +962,14 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (modalCadastro) modalCadastro.classList.remove('show');
     });
 
-    inputBusca.addEventListener('input', renderLista);
+    // Horário de notificação (admin)
+    if (horaNotifInput) horaNotifInput.addEventListener('change', () => {
+        if (!podeConfigurarDias()) return;
+        const v = horaNotifInput.value || '08:00';
+        HORA_NOTIF = v;
+        localStorage.setItem(HORA_KEY, HORA_NOTIF);
+        salvarConfigHora(v);
+    });
 
     // Prazo de alerta (somente admin altera → vale para todos)
     diasAlertaInput.addEventListener('change', () => {
@@ -933,6 +997,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Notificações
     btnNotif.addEventListener('click', pedirPermissaoNotificacao);
     setInterval(() => verificarNotificacoes(false), 6 * 60 * 60 * 1000);
+    setInterval(() => verificarNotificacaoHorario(), 60 * 1000);
     setInterval(() => { if (sessao) loadProdutos().then(() => verificarNotificacoes(false)); }, 86400000);
 
     const fab = document.getElementById('fab-cadastrar');
