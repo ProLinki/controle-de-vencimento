@@ -24,6 +24,8 @@ const loginErro = document.getElementById('login-erro');
 const userChip = document.getElementById('user-chip');
 const userNome = document.getElementById('user-nome');
 const userCargo = document.getElementById('user-cargo');
+const menuUser = document.getElementById('menu-user');
+const menuUserNome = document.getElementById('menu-user-nome');
 const formProduto = document.getElementById('formProduto');
 const listaProdutos = document.getElementById('lista-produtos');
 const inputBusca = document.getElementById('busca');
@@ -157,6 +159,8 @@ function aplicarPermissoes() {
     userNome.textContent = sessao.nome;
     userCargo.textContent = labelCargo(c);
     userCargo.className = 'cargo-badge cargo-' + c;
+    if (menuUser) { menuUser.style.display = 'block'; }
+    if (menuUserNome) { menuUserNome.textContent = sessao.nome; }
     if (menuFuncionariosItem) {
         if (podeGerirFuncionarios()) {
             menuFuncionariosItem.style.display = '';

@@ -3,8 +3,8 @@
    Material Design (preto + amarelo)
    ============================ */
 :root {
-  --md-primary: #FFC107;          /* amarelo */
-  --md-primary-dark: #FFA000;
+  --md-primary: #f2c14e;          /* amarelo */
+  --md-primary-dark: #d4a300;
   --md-on-primary: #000000;
   --md-secondary: #000000;         /* preto */
   --md-on-secondary: #FFFFFF;
@@ -76,7 +76,7 @@ body {
 .toolbar-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #d4a300;
+  color: #f2c14e;
   margin: 0;
   flex: 1;
   letter-spacing: 0.2px;
@@ -291,7 +291,8 @@ body {
 .menu-overlay.show .menu-content { transform: translateX(0); }
 .btn-fechar-menu { background: transparent; border: none; font-size: 1.5rem; color: var(--md-on-surface); cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; align-self: flex-end; border-radius: 50%; }
 .btn-fechar-menu:hover { background: var(--md-bg); }
-.menu-lista { list-style: none; padding: 0; margin: 0; }
+.menu-user { font-size: 1rem; font-weight: 700; color: var(--md-on-surface); padding: 8px 16px 12px; }
+.menu-user span { color: #f2c14e; }
 .menu-lista li { margin-bottom: 4px; }
 .menu-lista a { display: block; padding: 12px 16px; font-size: 0.95rem; font-weight: 500; color: var(--md-on-surface); text-decoration: none; border-radius: var(--md-radius-md); transition: background 0.2s; }
 .menu-lista a:hover { background: var(--md-surface-variant); color: var(--md-on-surface); }
