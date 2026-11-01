@@ -203,6 +203,12 @@ async function salvarConfigDias(v) {
     }
 }
 
+async function salvarTzOffset() {
+    if (!sbReady) return;
+    try {
+        await sb.from('configuracoes').upsert({ chave: 'tz_offset', valor: String(new Date().getTimezoneOffset()), updated_at: new Date().toISOString() });
+    } catch (e) { console.warn(e); }
+}
 async function salvarConfigHora(v) {
     try {
         const { error } = await sb.from('configuracoes').upsert([
@@ -946,6 +952,7 @@ function renderStats() {
 async function iniciarApp() {
     aplicarPermissoes();
     await loadConfig();
+    if (podeConfigurarDias()) salvarTzOffset();
     await loadProdutos();
     if (podeGerirFuncionarios()) await loadFuncionarios();
     atualizarUINotificacao();
