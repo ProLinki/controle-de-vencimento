@@ -1,4 +1,4 @@
-const CACHE = 'mercadinho-v15';
+const CACHE = 'mercadinho-v16';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -20,7 +20,21 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Clique na notificação: abre/foca o app
+// Push server-side: exibe notificação recebida
+self.addEventListener('push', (e) => {
+  let data = { title: 'Mercadinho Belo', body: 'Você tem itens vencidos.' };
+  try { if (e.data) data = e.data.json(); } catch (err) { try { data.body = e.data.text(); } catch (e2) {} }
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'Mercadinho Belo', {
+      body: data.body || '',
+      icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+      badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+      tag: 'mercadinho-push',
+      renotify: true,
+      data: { url: './index.html' }
+    })
+  );
+});
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   e.waitUntil(

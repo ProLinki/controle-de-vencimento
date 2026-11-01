@@ -205,11 +205,10 @@ async function salvarConfigDias(v) {
 
 async function salvarConfigHora(v) {
     try {
-        const { error } = await sb.from('configuracoes').upsert({
-            chave: 'hora_notificacao',
-            valor: v,
-            updated_at: new Date().toISOString()
-        });
+        const { error } = await sb.from('configuracoes').upsert([
+            { chave: 'hora_notificacao', valor: v, updated_at: new Date().toISOString() },
+            { chave: 'tz_offset', valor: String(new Date().getTimezoneOffset()), updated_at: new Date().toISOString() }
+        ]);
         if (error) throw error;
         showToast('Horário de notificação atualizado: ' + v);
     } catch (e) {
@@ -629,7 +628,34 @@ async function excluirFuncionario(f) {
     }
 }
 
-// ---------- NOTIFICAÇÕES DO DISPOSITIVO ----------
+const VAPID_PUBLIC_KEY = 'BE4K-sQoS03PFNg8xV1CNIUvI4r1pADFJNjPTJqIA8U342S7tKcv_VQ4CNNBN5C7jlXqZx9WvGUHhiHK0j0M3Hw';
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+}
+
+async function ativarPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !sbReady) return;
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+        }
+        const json = sub.toJSON();
+        await sb.from('push_subscriptions').upsert({
+            endpoint: sub.endpoint,
+            p256dh: json.keys.p256dh,
+            auth: json.keys.auth,
+            user_agent: navigator.userAgent
+        }, { onConflict: 'endpoint' });
+    } catch (e) { console.warn('Push subscribe:', e.message); }
+}
 function notifDisponivel() { return ('Notification' in window); }
 
 function atualizarUINotificacao() {
@@ -670,6 +696,7 @@ async function pedirPermissaoNotificacao() {
         atualizarUINotificacao();
         if (perm === 'granted') {
             showToast('Notificações ativadas!');
+            await ativarPush();
             await enviarNotificacao('🔔 Notificações ativadas', 'Pronto! Avisaremos aqui quando algum item estiver perto do vencimento.', true);
         } else {
             showToast('Permissão não concedida.');
@@ -922,6 +949,7 @@ async function iniciarApp() {
     await loadProdutos();
     if (podeGerirFuncionarios()) await loadFuncionarios();
     atualizarUINotificacao();
+    if (notifDisponivel() && Notification.permission === 'granted') ativarPush();
     verificarNotificacoes(false);
     verificarNotificacaoHorario();
 }

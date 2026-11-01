@@ -73,6 +73,16 @@ VALUES (
 )
 ON CONFLICT (login) DO NOTHING;
 
--- ============================================================
--- FIM
--- ============================================================
+-- 7) Assinaturas de push (notificações server-side) --
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  endpoint TEXT UNIQUE NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Permitir tudo" ON push_subscriptions FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

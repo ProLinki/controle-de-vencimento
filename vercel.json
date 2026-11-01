@@ -1,12 +1,17 @@
 {
   "version": 2,
   "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
     { "src": "**/*", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/manifest.json", "headers": { "Access-Control-Allow-Origin": "*" } },
     { "src": "/service-worker.js", "headers": { "Access-Control-Allow-Origin": "*" } },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/send-notifications", "schedule": "0 11 * * *" }
   ]
 }
