@@ -66,6 +66,7 @@ const menuSair = document.getElementById('menu-sair');
 const modalCadastro = document.getElementById('modal-cadastro');
 const modalAlerta = document.getElementById('modal-alerta');
 const modalFuncionarios = document.getElementById('modal-funcionarios');
+const modalUsuario = document.getElementById('modal-usuario');
 const modalScan = document.getElementById('modal-scan');
 const btnFecharAlerta = document.getElementById('btn-fechar-alerta');
 const btnScan = document.getElementById('btn-scan');
@@ -134,7 +135,7 @@ async function entrar(e) {
         if (!data || !data.ativo) { loginErro.textContent = 'Usuário não encontrado ou inativo.'; return; }
         const hash = await sha256Hex(senha + data.salt);
         if (hash !== data.senha_hash) { loginErro.textContent = 'Senha incorreta.'; return; }
-        sessao = { id: data.id, nome: data.nome, login: data.login, cargo: data.cargo };
+        sessao = { id: data.id, nome: data.nome, login: data.login, cargo: data.cargo, loginEm: new Date().toISOString() };
         localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
         formLogin.reset();
         telaLogin.style.display = 'none';
@@ -412,6 +413,45 @@ function pararScan() {
     if (scanVideo) scanVideo.srcObject = null;
 }
 
+// ---------- MODAL USUÁRIO ----------
+function abrirModalUsuario() {
+    if (!sessao) return;
+    document.getElementById('us-id').value = sessao.id;
+    document.getElementById('us-nome').value = sessao.nome || '';
+    document.getElementById('us-login').value = sessao.login || '';
+    document.getElementById('us-cargo').value = labelCargo(sessao.cargo);
+    const loginEm = sessao.loginEm ? new Date(sessao.loginEm) : null;
+    document.getElementById('us-login-em').value = loginEm ? loginEm.toLocaleString('pt-BR') : '';
+    document.getElementById('us-senha').value = '';
+    if (modalUsuario) modalUsuario.classList.add('show');
+}
+window.abrirModalUsuario = abrirModalUsuario;
+
+async function salvarUsuario(e) {
+    if (e) e.preventDefault();
+    if (!sbReady || !sessao) { showToast('Supabase não conectado.'); return; }
+    const nome = document.getElementById('us-nome').value.trim();
+    const senha = document.getElementById('us-senha').value;
+    if (!nome) { showToast('Preencha o nome.'); return; }
+    if (senha && senha.length < 4) { showToast('Senha muito curta (mínimo 4).'); return; }
+    try {
+        const payload = { nome };
+        if (senha) {
+            payload.salt = novoSalt();
+            payload.senha_hash = await sha256Hex(senha + payload.salt);
+        }
+        const { error } = await sb.from('funcionarios').update(payload).eq('id', sessao.id);
+        if (error) throw error;
+        sessao.nome = nome;
+        localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
+        aplicarPermissoes();
+        showToast('Dados atualizados!');
+        if (modalUsuario) modalUsuario.classList.remove('show');
+    } catch (err) {
+        showToast('Erro: ' + err.message);
+    }
+}
+
 // ---------- EXCLUIR LOTE (admin) ----------
 async function deleteLote(id) {
     if (!podeExcluirItem()) { showToast('Somente o administrador pode excluir itens.'); return; }
@@ -600,7 +640,7 @@ async function salvarFuncionario(e) {
             // Se o admin alterou o próprio login, atualiza a sessão local
             const { data: meu } = await sb.from('funcionarios').select('id, nome, login, cargo').eq('id', sessao.id).maybeSingle();
             if (meu) {
-                sessao = { id: meu.id, nome: meu.nome, login: meu.login, cargo: meu.cargo };
+                sessao = { id: meu.id, nome: meu.nome, login: meu.login, cargo: meu.cargo, loginEm: sessao.loginEm || new Date().toISOString() };
                 localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
                 aplicarPermissoes();
             }
@@ -974,7 +1014,10 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Restaura sessão
     try {
         const salva = localStorage.getItem(SESSAO_KEY);
-        if (salva) sessao = JSON.parse(salva);
+        if (salva) {
+            sessao = JSON.parse(salva);
+            if (sessao && !sessao.loginEm) sessao.loginEm = new Date().toISOString();
+        }
     } catch (e) { sessao = null; }
 
     if (sessao && sessao.id) {
@@ -1012,6 +1055,16 @@ document.addEventListener('DOMContentLoaded', () => { try {
         localStorage.setItem(HORA_KEY, HORA_NOTIF);
         salvarConfigHora(v);
     });
+
+    inputBusca.addEventListener('input', renderLista);
+
+    // Menu Usuário
+    const menuUsuario = document.getElementById('menu-usuario');
+    if (menuUsuario) menuUsuario.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalUsuario(); });
+    const formUsuario = document.getElementById('formUsuario');
+    if (formUsuario) formUsuario.addEventListener('submit', salvarUsuario);
+    const modalUsuarioEl = document.getElementById('modal-usuario');
+    if (modalUsuarioEl) modalUsuarioEl.addEventListener('click', e => { if (e.target === modalUsuarioEl) modalUsuarioEl.classList.remove('show'); });
 
     // Prazo de alerta (somente admin altera → vale para todos)
     diasAlertaInput.addEventListener('change', () => {
@@ -1092,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (e.key === 'Escape') {
             if (modalCadastro && modalCadastro.classList.contains('show')) { limparFormCadastro(); fecharModalGenerico(modalCadastro); }
             if (modalAlerta && modalAlerta.classList.contains('show')) fecharModalGenerico(modalAlerta);
+            if (modalUsuario && modalUsuario.classList.contains('show')) modalUsuario.classList.remove('show');
 
             fecharMenu();
         }
