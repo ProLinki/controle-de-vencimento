@@ -1,4 +1,4 @@
-const CACHE = 'mercadinho-v18';
+const CACHE = 'mercadinho-v19';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=22">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -107,7 +107,13 @@
     <h3>Cadastrar Produto / Lote</h3>
     <p class="modal-sub">O mesmo produto pode ter vários lotes com datas diferentes.</p>
     <form id="formProduto">
-      <div class="input-group"><label>Nome do produto</label><input type="text" id="nome" placeholder="Ex: Leite Integral" required></div>
+      <div class="input-group">
+        <label>Nome do produto</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="nome" placeholder="Ex: Leite Integral" required style="flex:1">
+          <button type="button" id="btn-ocr" class="btn btn-outline" style="width:auto;padding:8px 14px">📷 Ler texto</button>
+        </div>
+      </div>
       <div class="input-group"><label>Unidade</label><select id="unidade" required><option value="litros">Litros</option><option value="gramas">Gramas</option><option value="caixa">Caixa (unidade)</option></select></div>
       <div class="input-group"><label>Valor da unidade (ex: 2)</label><input type="number" id="valor" min="0" step="0.001" value="1" required></div>
       <div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div>
@@ -134,7 +140,19 @@
   </div>
 </div>
 
-<div id="modal-funcionarios" class="modal-overlay">
+<div id="modal-ocr" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Ler Texto pela Câmera</h3>
+    <p class="modal-sub">Aponte para o rótulo/nome do produto.</p>
+    <video id="ocr-video" autoplay playsinline style="width:100%;border-radius:12px;background:#000"></video>
+    <canvas id="ocr-canvas" style="display:none"></canvas>
+    <p id="ocr-status" class="modal-sub" style="margin-top:8px">Iniciando câmera...</p>
+    <div class="modal-acoes">
+      <button type="button" id="btn-ocr-capturar" class="btn btn-success">📸 Capturar e ler</button>
+      <button type="button" id="btn-fechar-ocr" class="btn btn-outline">Fechar</button>
+    </div>
+  </div>
+</div>
   <div class="modal" role="dialog" aria-modal="true">
     <h3>Funcionários</h3>
     <p class="modal-sub">Adicione, edite ou remova quem acessa o sistema.</p>
@@ -159,7 +177,8 @@
 
 <div id="toast" class="toast"></div>
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
-<script src="script.js?v=20"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=18').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="script.js?v=22"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=19').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>

@@ -67,6 +67,13 @@ const modalCadastro = document.getElementById('modal-cadastro');
 const modalAlerta = document.getElementById('modal-alerta');
 const modalFuncionarios = document.getElementById('modal-funcionarios');
 const modalScan = document.getElementById('modal-scan');
+const modalOcr = document.getElementById('modal-ocr');
+const btnOcr = document.getElementById('btn-ocr');
+const btnOcrCapturar = document.getElementById('btn-ocr-capturar');
+const btnFecharOcr = document.getElementById('btn-fechar-ocr');
+const ocrVideo = document.getElementById('ocr-video');
+const ocrCanvas = document.getElementById('ocr-canvas');
+const ocrStatus = document.getElementById('ocr-status');
 const btnFecharAlerta = document.getElementById('btn-fechar-alerta');
 const btnScan = document.getElementById('btn-scan');
 const btnFecharScan = document.getElementById('btn-fechar-scan');
@@ -403,6 +410,59 @@ function pararScan() {
     scanRAF = null;
     if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
     if (scanVideo) scanVideo.srcObject = null;
+}
+
+// ---------- OCR (ler texto pela câmera) ----------
+let ocrStream = null;
+async function iniciarOcr() {
+    if (ocrStatus) ocrStatus.textContent = 'Iniciando câmera...';
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (ocrStatus) ocrStatus.textContent = 'Câmera não disponível.';
+        return;
+    }
+    try {
+        ocrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (ocrVideo) { ocrVideo.srcObject = ocrStream; await ocrVideo.play(); }
+        if (ocrStatus) ocrStatus.textContent = 'Aponte para o texto e toque em "Capturar e ler".';
+    } catch (e) {
+        if (ocrStatus) ocrStatus.textContent = 'Erro ao acessar câmera: ' + e.message;
+    }
+}
+function pararOcr() {
+    if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
+    if (ocrVideo) ocrVideo.srcObject = null;
+}
+async function capturarOcr() {
+    if (!ocrVideo || !ocrCanvas) return;
+    if (ocrStatus) ocrStatus.textContent = 'Processando texto...';
+    const w = ocrVideo.videoWidth || 640;
+    const h = ocrVideo.videoHeight || 480;
+    ocrCanvas.width = w;
+    ocrCanvas.height = h;
+    const ctx = ocrCanvas.getContext('2d');
+    ctx.drawImage(ocrVideo, 0, 0, w, h);
+    try {
+        if (typeof Tesseract === 'undefined') {
+            if (ocrStatus) ocrStatus.textContent = 'Biblioteca OCR não carregou.';
+            return;
+        }
+        const { data } = await Tesseract.recognize(ocrCanvas, 'por+eng', {
+            logger: m => { if (m.status === 'recognizing text' && ocrStatus) ocrStatus.textContent = 'Reconhecendo: ' + Math.round((m.progress || 0) * 100) + '%'; }
+        });
+        const texto = (data && data.text ? data.text : '').trim().replace(/\s+/g, ' ');
+        if (texto) {
+            const nomeInput = document.getElementById('nome');
+            if (nomeInput) nomeInput.value = texto.slice(0, 80);
+            if (ocrStatus) ocrStatus.textContent = 'Texto lido: ' + texto.slice(0, 60);
+            showToast('Texto inserido no nome do produto.');
+            pararOcr();
+            if (modalOcr) modalOcr.classList.remove('show');
+        } else {
+            if (ocrStatus) ocrStatus.textContent = 'Nenhum texto reconhecido. Tente novamente.';
+        }
+    } catch (e) {
+        if (ocrStatus) ocrStatus.textContent = 'Erro OCR: ' + e.message;
+    }
 }
 
 // ---------- EXCLUIR LOTE (admin) ----------
@@ -1064,7 +1124,10 @@ document.addEventListener('DOMContentLoaded', () => { try {
     }
     if (btnScan) btnScan.addEventListener('click', () => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     if (btnFecharScan) btnFecharScan.addEventListener('click', () => { pararScan(); if (modalScan) modalScan.classList.remove('show'); });
-    if (modalScan) modalScan.addEventListener('click', e => { if (e.target === modalScan) { pararScan(); modalScan.classList.remove('show'); } });
+    if (btnOcr) btnOcr.addEventListener('click', () => { if (modalOcr) modalOcr.classList.add('show'); iniciarOcr(); });
+    if (btnOcrCapturar) btnOcrCapturar.addEventListener('click', capturarOcr);
+    if (btnFecharOcr) btnFecharOcr.addEventListener('click', () => { pararOcr(); if (modalOcr) modalOcr.classList.remove('show'); });
+    if (modalOcr) modalOcr.addEventListener('click', e => { if (e.target === modalOcr) { pararOcr(); modalOcr.classList.remove('show'); } });
 
     // Fechar modais ao clicar no overlay
     if (modalCadastro) modalCadastro.addEventListener('click', e => { if (e.target === modalCadastro) { limparFormCadastro(); fecharModalGenerico(modalCadastro); } });
@@ -1078,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (e.key === 'Escape') {
             if (modalCadastro && modalCadastro.classList.contains('show')) { limparFormCadastro(); fecharModalGenerico(modalCadastro); }
             if (modalAlerta && modalAlerta.classList.contains('show')) fecharModalGenerico(modalAlerta);
-            if (modalScan && modalScan.classList.contains('show')) { pararScan(); modalScan.classList.remove('show'); }
+            if (modalOcr && modalOcr.classList.contains('show')) { pararOcr(); modalOcr.classList.remove('show'); }
             fecharMenu();
         }
     });
