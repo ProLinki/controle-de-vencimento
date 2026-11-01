@@ -424,6 +424,21 @@ function abrirModal(loteId, produtoId) {
 }
 window.abrirModal = abrirModal;
 
+function limparFormCadastro() {
+    if (formProduto) formProduto.reset();
+    const q = document.getElementById('quantidade');
+    const v = document.getElementById('valor');
+    const u = document.getElementById('unidade');
+    const vc = document.getElementById('vencimento');
+    const cb = document.getElementById('codigoBarras');
+    const nm = document.getElementById('nome');
+    if (q) q.value = 1;
+    if (v) v.value = 1;
+    if (u) u.value = 'litros';
+    if (vc) vc.value = new Date().toISOString().split('T')[0];
+    if (cb) cb.value = '';
+    if (nm) nm.value = '';
+}
 function fecharModal() {
     modalOverlay.classList.remove('show');
     editando = null;
@@ -860,11 +875,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         const venc = document.getElementById('vencimento').value;
         if (!nome || !qtd || !venc || !unidade || !valor) { showToast('Preencha todos os campos.'); return; }
         await saveProduto(nome, unidade, valor, qtd, venc, cb);
-        formProduto.reset();
-        document.getElementById('quantidade').value = 1;
-        document.getElementById('valor').value = 1;
-        document.getElementById('unidade').value = 'litros';
-        document.getElementById('vencimento').value = new Date().toISOString().split('T')[0];
+        limparFormCadastro();
         if (modalCadastro) modalCadastro.classList.remove('show');
     });
 
@@ -914,7 +925,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     function abrirModalGenerico(m) { if (m) m.classList.add('show'); }
     function fecharModalGenerico(m) { if (m) m.classList.remove('show'); }
 
-    if (menuCadastro) menuCadastro.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalCadastro); });
+    if (menuCadastro) menuCadastro.addEventListener('click', e => { e.preventDefault(); fecharMenu(); limparFormCadastro(); abrirModalGenerico(modalCadastro); });
     if (menuAlerta) menuAlerta.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalAlerta); });
     if (menuFuncionarios) menuFuncionarios.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios(); });
     if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
@@ -929,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (modalScan) modalScan.addEventListener('click', e => { if (e.target === modalScan) { pararScan(); modalScan.classList.remove('show'); } });
 
     // Fechar modais ao clicar no overlay
-    if (modalCadastro) modalCadastro.addEventListener('click', e => { if (e.target === modalCadastro) fecharModalGenerico(modalCadastro); });
+    if (modalCadastro) modalCadastro.addEventListener('click', e => { if (e.target === modalCadastro) { limparFormCadastro(); fecharModalGenerico(modalCadastro); } });
     if (modalAlerta) modalAlerta.addEventListener('click', e => { if (e.target === modalAlerta) fecharModalGenerico(modalAlerta); });
     if (modalFuncionarios) modalFuncionarios.addEventListener('click', e => { if (e.target === modalFuncionarios) fecharModalGenerico(modalFuncionarios); });
 
@@ -938,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // ESC fecha modais
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            if (modalCadastro && modalCadastro.classList.contains('show')) fecharModalGenerico(modalCadastro);
+            if (modalCadastro && modalCadastro.classList.contains('show')) { limparFormCadastro(); fecharModalGenerico(modalCadastro); }
             if (modalAlerta && modalAlerta.classList.contains('show')) fecharModalGenerico(modalAlerta);
             if (modalScan && modalScan.classList.contains('show')) { pararScan(); modalScan.classList.remove('show'); }
             fecharMenu();
