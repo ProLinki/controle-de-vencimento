@@ -1,4 +1,4 @@
-const CACHE = 'mercadinho-v17';
+const CACHE = 'mercadinho-v18';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -24,16 +24,20 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   let data = { title: 'Mercadinho Belo', body: 'Você tem itens vencidos.' };
   try { if (e.data) data = e.data.json(); } catch (err) { try { data.body = e.data.text(); } catch (e2) {} }
-  e.waitUntil(
-    self.registration.showNotification(data.title || 'Mercadinho Belo', {
-      body: data.body || '',
-      icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
-      badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
-      tag: 'mercadinho-push',
-      renotify: true,
-      data: { url: './index.html' }
-    })
-  );
+  e.waitUntil((async () => {
+    try {
+      await self.registration.showNotification(data.title || 'Mercadinho Belo', {
+        body: data.body || '',
+        icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+        badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+        tag: 'mercadinho-push',
+        renotify: true,
+        data: { url: './index.html' }
+      });
+    } catch (err) {
+      console.error('showNotification falhou:', err);
+    }
+  })());
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
