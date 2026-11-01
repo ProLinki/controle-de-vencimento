@@ -209,7 +209,14 @@ body {
 .mini-excluir:hover { background: #FECACA; }
 .acao-produto { background: none; border: none; color: var(--md-on-surface-variant); font-size: 0.78rem; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; }
 .acao-produto:hover { color: var(--md-error); }
-.lote-dono { font-size: 0.72rem; color: var(--md-on-surface-variant); font-weight: 500; }
+/* ===== CARD RESUMO CLICÁVEL ===== */
+.produto-card { cursor: default; }
+.produto-resumo { cursor: pointer; }
+.produto-resumo .nome { font-weight: 700; font-size: 1.05rem; color: var(--md-on-surface); margin-bottom: 6px; }
+.resumo-dias { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.resumo-dias .dias { font-weight: 700; font-size: 0.85rem; color: var(--md-on-surface); }
+.produto-card.expandido .produto-resumo { border-bottom: 1px solid var(--md-outline-variant); padding-bottom: 8px; margin-bottom: 8px; }
+.produto-detalhes { animation: slideIn 0.25s ease; }
 
 /* ===== EMPTY STATE ===== */
 .empty-state { text-align: center; padding: 40px 16px; color: var(--md-on-surface-variant); }

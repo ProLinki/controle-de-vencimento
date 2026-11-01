@@ -762,16 +762,29 @@ function renderLista() {
         card.className = 'produto-card';
 
         const totalQtd = p.lotes.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
-        const head = document.createElement('div');
-        head.className = 'produto-head';
-        head.innerHTML = '<div class="nome">' + esc(p.nome) + '</div>' +
+        // lote mais próximo do vencimento (para o resumo)
+        const lotesOrd = [...p.lotes].sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento));
+        const proximo = lotesOrd[0];
+        const dProx = proximo ? diasRestantes(proximo.vencimento) : 0;
+        const sProx = status(dProx);
+
+        const resumo = document.createElement('div');
+        resumo.className = 'produto-resumo';
+        resumo.innerHTML =
+            '<div class="nome">' + esc(p.nome) + '</div>' +
             '<div class="produto-info">' +
-            '<span>' + p.lotes.length + ' lote' + (p.lotes.length > 1 ? 's' : '') + '</span>' +
             '<span>Total: ' + totalQtd + ' un</span>' +
             (p.unidade ? '<span>' + esc(p.valor) + ' ' + esc(p.unidade) + '</span>' : '') +
-            (p.codigoBarras ? '<span>Cód: ' + esc(p.codigoBarras) + '</span>' : '') +
+            '</div>' +
+            '<div class="resumo-dias">' +
+            '<span class="status status-' + sProx.c + '">' + sProx.t + '</span>' +
+            '<span class="dias">' + txtDias(dProx) + '</span>' +
             '</div>';
-        card.appendChild(head);
+        card.appendChild(resumo);
+
+        const detalhes = document.createElement('div');
+        detalhes.className = 'produto-detalhes';
+        detalhes.style.display = 'none';
 
         const listaLotes = document.createElement('div');
         listaLotes.className = 'lote-lista';
@@ -792,6 +805,7 @@ function renderLista() {
                 '<span class="status status-' + s.c + '">' + s.t + '</span></div>' +
                 '<div class="meta"><span><strong>Vence:</strong> ' + fmtBR(l.vencimento) + '</span>' +
                 '<span class="dias">' + txtDias(d) + '</span></div>' +
+                (l.codigoBarras ? '<div class="lote-dono">Cód: ' + esc(l.codigoBarras) + '</div>' : '') +
                 dono +
                 '</div>';
 
@@ -801,13 +815,13 @@ function renderLista() {
                 if (ed) {
                     const bEd = document.createElement('button');
                     bEd.type = 'button'; bEd.className = 'btn-mini mini-editar'; bEd.textContent = 'Editar';
-                    bEd.addEventListener('click', () => abrirModal(l.id, p.id));
+                    bEd.addEventListener('click', (ev) => { ev.stopPropagation(); abrirModal(l.id, p.id); });
                     acoes.appendChild(bEd);
                 }
                 if (ex) {
                     const bEx = document.createElement('button');
                     bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = 'Excluir';
-                    bEx.addEventListener('click', () => deleteLote(l.id));
+                    bEx.addEventListener('click', (ev) => { ev.stopPropagation(); deleteLote(l.id); });
                     acoes.appendChild(bEx);
                 }
                 item.appendChild(acoes);
@@ -816,7 +830,16 @@ function renderLista() {
             listaLotes.appendChild(item);
         });
 
-        card.appendChild(listaLotes);
+        detalhes.appendChild(listaLotes);
+        card.appendChild(detalhes);
+
+        // Toggle detalhes ao clicar no resumo
+        resumo.addEventListener('click', () => {
+            const aberto = detalhes.style.display !== 'none';
+            detalhes.style.display = aberto ? 'none' : 'block';
+            card.classList.toggle('expandido', !aberto);
+        });
+
         listaProdutos.appendChild(card);
     });
 }
