@@ -38,7 +38,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { height: 100%; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body:has(.modal-overlay.show),
 body:has(.menu-overlay.show) {
   overflow: hidden;
@@ -49,9 +49,12 @@ body {
   background: var(--bg-surface);
   color: var(--text-main);
   line-height: 1.5;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 /* ===== APP BAR (dark, blur) ===== */
@@ -59,10 +62,11 @@ body {
   background: rgba(27, 27, 27, 0.85);
   backdrop-filter: blur(12px);
   padding: 0;
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 100;
   width: 100%;
+  flex: 0 0 auto;
   border-bottom: 1px solid var(--border-subtle);
   box-shadow: none;
 }
@@ -107,9 +111,20 @@ body {
 .app-toolbar .user-chip { margin-top: 0; }
 .app-toolbar .user-chip .nome { color: var(--text-main); font-size: 0.8rem; }
 
-/* ===== CONTAINER / MAIN ===== */
-.container { max-width: 520px; margin: 0 auto; padding: 20px 16px 90px; display: flex; flex-direction: column; gap: 20px; }
-.main-content { flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
+/* ===== CONTAINER / MAIN (área central fixa com rolagem própria da lista) ===== */
+.container {
+  flex: 1;
+  min-height: 0;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.main-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
 
 /* ===== CARDS ===== */
 .card {
@@ -196,12 +211,27 @@ body {
 .btn-outline:hover { background: rgba(255, 255, 255, 0.1); box-shadow: none; }
 .btn-primary { background: var(--primary-yellow); color: var(--on-primary); }
 
-/* ===== BUSCA ===== */
-.search-group { display: flex; gap: 8px; align-items: center; margin-bottom: 0; }
+/* ===== BUSCA (fixa acima da lista) ===== */
+.search-group { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; margin-bottom: 0; }
 .search-group input[type="text"] { flex: 1; }
 
-/* ===== PRODUTO CARDS ===== */
-.produto-lista { display: flex; flex-direction: column; gap: 12px; }
+/* ===== PRODUTO CARDS (lista com rolagem interna fixa no centro) ===== */
+.produto-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 6px 100px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.produto-lista::-webkit-scrollbar { width: 6px; }
+.produto-lista::-webkit-scrollbar-track { background: transparent; }
+.produto-lista::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 6px; }
+.produto-lista::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary-yellow-rgb), 0.4); }
 .produto-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -282,7 +312,7 @@ body {
 .produto-detalhes { animation: slideIn 0.25s ease; }
 
 /* ===== EMPTY STATE ===== */
-.empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); }
+.empty-state { flex: 0 0 auto; text-align: center; padding: 40px 16px; color: var(--text-muted); }
 .empty-state p { font-size: 0.95rem; }
 
 /* ===== MODAL ===== */
@@ -421,7 +451,7 @@ body {
 .menu-lista + .app-version { margin-top: 16px; }
 
 /* ===== STATS (metrics grid) ===== */
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: none; border: none; box-shadow: none; padding: 0; border-radius: 0; }
+.stats { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: none; border: none; box-shadow: none; padding: 0; border-radius: 0; }
 .stat-item {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -488,7 +518,7 @@ body {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 380px) {
-  .container { padding: 16px 12px 90px; }
+  .container { padding: 12px 12px 12px; }
   .stats { gap: 8px; }
   .stat-number { font-size: 1.2rem; }
   .stat-label { font-size: 0.55rem; }
