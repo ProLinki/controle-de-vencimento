@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="110" fill="#1a1a1a"/>
+  <!-- folha -->
+  <path d="M298 44 C 350 46 380 88 370 138 C 318 132 292 94 298 44 Z" fill="#FFC72C"/>
+  <path d="M308 132 C 314 98 330 76 352 62" stroke="#1a1a1a" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- coração -->
+  <path d="M256 470 C 196 412 116 348 116 246 C 116 180 168 146 220 146 C 242 146 252 156 256 164 C 260 156 270 146 292 146 C 344 146 396 180 396 246 C 396 348 316 412 256 470 Z" fill="#FFC72C"/>
+  <!-- pontinho branco -->
+  <circle cx="182" cy="182" r="11" fill="#FFFFFF"/>
+  <!-- carrinho -->
+  <g stroke="#FFFFFF" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M160 204 h 26 l 22 108 h 138"/>
+    <path d="M196 204 h 168 l -20 96 h -136 z"/>
+    <path d="M262 204 v 96"/>
+    <path d="M326 204 v 96"/>
+    <path d="M204 252 h 158"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="13" fill="none">
+    <circle cx="234" cy="348" r="17"/>
+    <circle cx="322" cy="348" r="17"/>
+  </g>
+</svg>
