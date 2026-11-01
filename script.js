@@ -748,7 +748,10 @@ function fmtDataHora(iso) {
 
 function renderLista() {
     const termo = normNome(inputBusca.value);
-    const filtrados = produtos.filter(p => !termo || normNome(p.nome).includes(termo));
+    const filtrados = produtos.filter(p => {
+        if (termo && !normNome(p.nome).includes(termo)) return false;
+        return p.lotes.some(l => diasRestantes(l.vencimento) <= DIAS_ALERTA);
+    });
 
     listaProdutos.innerHTML = '';
     if (filtrados.length === 0) { vazio.style.display = 'block'; return; }
