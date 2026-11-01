@@ -1059,7 +1059,11 @@ document.addEventListener('DOMContentLoaded', () => { try {
     inputBusca.addEventListener('input', renderLista);
 
     // Menu Usuário
-    const menuUsuario = document.getElementById('menu-usuario');
+    // Versão do último deploy
+    fetch('api/version').then(r => r.json()).then(d => {
+        const el = document.getElementById('app-version');
+        if (el && d && d.sha) el.textContent = 'Último deploy: ' + d.sha;
+    }).catch(() => {});
     if (menuUsuario) menuUsuario.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalUsuario(); });
     const formUsuario = document.getElementById('formUsuario');
     if (formUsuario) formUsuario.addEventListener('submit', salvarUsuario);
