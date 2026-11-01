@@ -813,8 +813,8 @@ async function enviarNotificacao(titulo, corpo, forcar) {
         if (reg && 'showNotification' in reg) {
             await reg.showNotification(titulo, {
                 body: corpo,
-                icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
-                badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+                icon: 'icon-192.png',
+                badge: 'icon-192.png',
                 tag: 'mercadinho-alerta',
                 renotify: false,
                 requireInteraction: false

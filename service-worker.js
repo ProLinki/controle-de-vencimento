@@ -1,4 +1,4 @@
-const CACHE = 'mercadinho-v48';
+const CACHE = 'mercadinho-v49';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -22,14 +22,14 @@ self.addEventListener('fetch', (e) => {
 
 // Push server-side: exibe notificação recebida
 self.addEventListener('push', (e) => {
-  let data = { title: 'Mercadinho Belo', body: 'Você tem itens vencidos.' };
+  let data = { title: 'M.E.F.O. Belo', body: 'Você tem itens vencidos.' };
   try { if (e.data) data = e.data.json(); } catch (err) { try { data.body = e.data.text(); } catch (e2) {} }
   e.waitUntil((async () => {
     try {
       await self.registration.showNotification(data.title || 'Mercadinho Belo', {
         body: data.body || '',
-        icon: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
-        badge: 'https://cdn-icons-png.flaticon.com/512/869/869064.png',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
         tag: 'mercadinho-push',
         renotify: true,
         data: { url: './index.html' }
