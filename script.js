@@ -164,7 +164,14 @@ function aplicarPermissoes() {
     userNome.textContent = sessao.nome;
     userCargo.textContent = labelCargo(c);
     userCargo.className = 'cargo-badge cargo-' + c;
-    if (menuFuncionariosItem) menuFuncionariosItem.style.display = podeGerirFuncionarios() ? '' : 'none';
+    if (menuFuncionariosItem) {
+        if (podeGerirFuncionarios()) {
+            menuFuncionariosItem.style.display = '';
+        } else {
+            menuFuncionariosItem.style.display = 'none';
+            menuFuncionariosItem.remove();
+        }
+    }
     diasAlertaInput.disabled = !podeConfigurarDias();
     if (horaNotifInput) horaNotifInput.disabled = !podeConfigurarDias();
     diasDica.textContent = podeConfigurarDias() ? ' (você controla o prazo de todos)' : ' (definido pelo administrador)';
@@ -435,18 +442,33 @@ function pararOcr() {
 async function capturarOcr() {
     if (!ocrVideo || !ocrCanvas) return;
     if (ocrStatus) ocrStatus.textContent = 'Processando texto...';
-    const w = ocrVideo.videoWidth || 640;
-    const h = ocrVideo.videoHeight || 480;
-    ocrCanvas.width = w;
-    ocrCanvas.height = h;
+    const vw = ocrVideo.videoWidth || 640;
+    const vh = ocrVideo.videoHeight || 480;
+    // crop central 80%
+    const cw = Math.round(vw * 0.8);
+    const ch = Math.round(vh * 0.4);
+    const cx = Math.round((vw - cw) / 2);
+    const cy = Math.round((vh - ch) / 2);
+    ocrCanvas.width = cw;
+    ocrCanvas.height = ch;
     const ctx = ocrCanvas.getContext('2d');
-    ctx.drawImage(ocrVideo, 0, 0, w, h);
+    ctx.drawImage(ocrVideo, cx, cy, cw, ch, 0, 0, cw, ch);
+    // grayscale + contraste
+    const img = ctx.getImageData(0, 0, cw, ch);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        const v = g < 128 ? 0 : 255;
+        d[i] = d[i+1] = d[i+2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
     try {
         if (typeof Tesseract === 'undefined') {
             if (ocrStatus) ocrStatus.textContent = 'Biblioteca OCR não carregou.';
             return;
         }
         const { data } = await Tesseract.recognize(ocrCanvas, 'por+eng', {
+            tessedit_pageseg_mode: 7,
             logger: m => { if (m.status === 'recognizing text' && ocrStatus) ocrStatus.textContent = 'Reconhecendo: ' + Math.round((m.progress || 0) * 100) + '%'; }
         });
         const texto = (data && data.text ? data.text : '').trim().replace(/\s+/g, ' ');
@@ -1114,7 +1136,11 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     if (menuCadastro) menuCadastro.addEventListener('click', e => { e.preventDefault(); fecharMenu(); limparFormCadastro(); abrirModalGenerico(modalCadastro); });
     if (menuAlerta) menuAlerta.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalAlerta); });
-    if (menuFuncionarios) menuFuncionarios.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios(); });
+    if (menuFuncionarios) menuFuncionarios.addEventListener('click', e => {
+        e.preventDefault();
+        if (!podeGerirFuncionarios()) { showToast('Somente o administrador acessa funcionários.'); return; }
+        fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios();
+    });
     if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
 
     // Código de barras: lookup ao sair do campo
