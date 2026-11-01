@@ -29,10 +29,11 @@ module.exports = async (req, res) => {
       const now = new Date();
       const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes();
       const [hh, mm] = horaNotif.split(':').map(x => parseInt(x, 10));
-      const localMin = (hh || 0) * 60 + (mm || 0);
+      const localMin = (isNaN(hh) ? 0 : hh) * 60 + (isNaN(mm) ? 0 : mm);
       const targetUtcMin = (localMin + tzOffset + 1440) % 1440;
-      if (Math.abs(utcMin - targetUtcMin) > 1) {
-        return res.status(200).json({ skipped: true, reason: 'not time yet', now: utcMin, target: targetUtcMin });
+      const diff = Math.min(Math.abs(utcMin - targetUtcMin), 1440 - Math.abs(utcMin - targetUtcMin));
+      if (diff > 2 && !force) {
+        return res.status(200).json({ skipped: true, reason: 'not time yet', now: utcMin, target: targetUtcMin, diff });
       }
       // avoid duplicate same day
       const today = now.toISOString().slice(0, 10);
