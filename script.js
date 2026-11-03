@@ -1175,6 +1175,9 @@ async function iniciarApp() {
     if (notifDisponivel() && Notification.permission === 'granted') ativarPush();
     verificarNotificacoes(false);
     verificarNotificacaoHorario();
+    // Verifica o horario de notificacao diaria a cada minuto enquanto o app estiver aberto.
+    if (window._notifInterval) clearInterval(window._notifInterval);
+    window._notifInterval = setInterval(() => { verificarNotificacaoHorario(); }, 60000);
 }
 
 document.addEventListener('DOMContentLoaded', () => { try {
