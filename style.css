@@ -636,6 +636,13 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.show { transform:translate(-50%,0); opacity:1; }
 .pull-refresh.ready { color:#f5c542; }
 
+.avisos-container { display:flex; flex-direction:column; gap:8px; }
+.aviso-card { background:#fff4d3; border:1px solid #f0d98d; border-radius:14px; padding:12px 14px; }
+.aviso-card .aviso-titulo { font-weight:700; font-size:.92rem; color:#5a430a; margin-bottom:4px; }
+.aviso-card .aviso-msg { font-size:.84rem; color:#3a311f; line-height:1.35; }
+.aviso-card .aviso-meta { font-size:.7rem; color:#7a6a3a; margin-top:6px; }
+.aviso-del { float:right; background:none; border:none; color:#a52e27; cursor:pointer; font-size:.75rem; }
+
 @media (min-width: 1024px) {
   .stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
   .stat-item { padding:10px 6px; }

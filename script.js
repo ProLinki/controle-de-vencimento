@@ -7,6 +7,7 @@ const NOTIF_KEY = 'notificacao_diaria_mercadinho';
 
 let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY), 10) || 3;
 let produtos = [];
+let avisosCache = [];
 let sb = null;
 let sbReady = false;
 let sessao = null;      // { id, nome, login, cargo }
@@ -851,6 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await loadConfig();
         await loadProdutos();
+        await loadAvisos();
         if (typeof podeGerirFuncionarios === 'function' && podeGerirFuncionarios()) await loadFuncionarios();
         showToast('Dados atualizados.');
       } catch (err) {
@@ -966,6 +968,96 @@ async function exportarRelatorio() {
         const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
         const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='relatorio-movimentacoes.csv'; a.click(); URL.revokeObjectURL(url);
     } catch(e) { showToast('Erro ao exportar relatorio: '+e.message); }
+}
+
+// ---------- AVISOS ----------
+async function loadAvisos() {
+    if (!sbReady) { avisosCache = []; renderAvisos(); return; }
+    try {
+        const { data, error } = await sb.from('avisos').select('*').eq('ativo', true).order('created_at', { ascending: false });
+        if (error) throw error;
+        avisosCache = data || [];
+    } catch (e) {
+        console.warn('Avisos:', e.message);
+        avisosCache = [];
+    }
+    renderAvisos();
+}
+
+function renderAvisos() {
+    const container = document.getElementById('avisos-container');
+    const modalList = document.getElementById('lista-avisos-modal');
+    if (container) {
+        container.innerHTML = '';
+        if (avisosCache.length === 0) {
+            container.style.display = 'none';
+        } else {
+            container.style.display = 'flex';
+            avisosCache.forEach(a => {
+                const card = document.createElement('div');
+                card.className = 'aviso-card';
+                card.innerHTML = '<div class="aviso-titulo">' + esc(a.titulo) + '</div>' +
+                    '<div class="aviso-msg">' + esc(a.mensagem) + '</div>' +
+                    '<div class="aviso-meta">' + esc(a.criado_por || 'Admin') + ' · ' + fmtDataHora(a.created_at) + '</div>';
+                container.appendChild(card);
+            });
+        }
+    }
+    if (modalList) {
+        modalList.innerHTML = '';
+        if (avisosCache.length === 0) {
+            modalList.textContent = 'Nenhum aviso.';
+        } else {
+            avisosCache.forEach(a => {
+                const row = document.createElement('div');
+                row.className = 'historico-row';
+                row.innerHTML = '<strong>' + esc(a.titulo) + '</strong><br>' + esc(a.mensagem) +
+                    '<br><small>' + esc(a.criado_por || '') + ' · ' + fmtDataHora(a.created_at) + '</small>' +
+                    (podeGerirFuncionarios() ? ' <button type="button" class="aviso-del" data-id="' + esc(a.id) + '">Excluir</button>' : '');
+                modalList.appendChild(row);
+            });
+            modalList.querySelectorAll('.aviso-del').forEach(btn => {
+                btn.addEventListener('click', () => deleteAviso(btn.dataset.id));
+            });
+        }
+    }
+    const formBox = document.getElementById('form-aviso-box');
+    if (formBox) formBox.style.display = podeGerirFuncionarios() ? '' : 'none';
+}
+
+async function saveAviso() {
+    if (!podeGerirFuncionarios()) { showToast('Somente administrador publica avisos.'); return; }
+    const titulo = (document.getElementById('aviso-titulo') || {}).value;
+    const mensagem = (document.getElementById('aviso-mensagem') || {}).value;
+    if (!titulo || !titulo.trim() || !mensagem || !mensagem.trim()) { showToast('Preencha título e mensagem.'); return; }
+    try {
+        const { error } = await sb.from('avisos').insert({
+            titulo: titulo.trim(),
+            mensagem: mensagem.trim(),
+            criado_por: sessao.nome,
+            criado_por_id: sessao.id
+        });
+        if (error) throw error;
+        document.getElementById('aviso-titulo').value = '';
+        document.getElementById('aviso-mensagem').value = '';
+        await loadAvisos();
+        showToast('Aviso publicado!');
+    } catch (e) {
+        showToast('Erro ao publicar aviso: ' + e.message);
+    }
+}
+
+async function deleteAviso(id) {
+    if (!podeGerirFuncionarios()) return;
+    if (!confirm('Excluir este aviso?')) return;
+    try {
+        const { error } = await sb.from('avisos').delete().eq('id', id);
+        if (error) throw error;
+        await loadAvisos();
+        showToast('Aviso excluído.');
+    } catch (e) {
+        showToast('Erro ao excluir aviso: ' + e.message);
+    }
 }
 
 function renderLista() {
@@ -1113,6 +1205,7 @@ async function iniciarApp() {
     aplicarPermissoes();
     if (podeConfigurarDias()) salvarTzOffset();
     await loadProdutos();
+    await loadAvisos();
     if (podeGerirFuncionarios()) await loadFuncionarios();
     atualizarUINotificacao();
     if (notifDisponivel() && Notification.permission === 'granted') ativarPush();
@@ -1156,6 +1249,14 @@ document.addEventListener('DOMContentLoaded', () => { try {
     });
 
     inputBusca.addEventListener('input', renderLista);
+
+    // Avisos
+    const menuAvisos = document.getElementById('menu-avisos');
+    if (menuAvisos) menuAvisos.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalAvisos) { modalAvisos.classList.add('show'); loadAvisos(); } });
+    const modalAvisos = document.getElementById('modal-avisos');
+    if (modalAvisos) modalAvisos.addEventListener('click', e => { if (e.target === modalAvisos) modalAvisos.classList.remove('show'); });
+    const btnSalvarAviso = document.getElementById('btn-salvar-aviso');
+    if (btnSalvarAviso) btnSalvarAviso.addEventListener('click', saveAviso);
 
     // Menu Usuário
     const menuUsuario = document.getElementById('menu-usuario');
