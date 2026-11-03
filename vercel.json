@@ -8,6 +8,9 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/send-notifications", "schedule": "*/15 * * * *" }
+     {
+      "path": "/api/notificacoes",
+      "schedule": "0 8 * * *"
+    }
   ]
 }
