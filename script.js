@@ -877,6 +877,14 @@ async function verificarNotificacaoHorario() {
     const ok = await enviarNotificacao(aviso.titulo, aviso.corpo, true);
     if (ok) localStorage.setItem(NOTIF_HORA_KEY, hoje);
 }
+// ---------- SPLASH SCREEN ----------
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash) splash.classList.add('hide');
+  }, 3000);
+});
+
 // ---------- PULL TO REFRESH (mobile) ----------
 document.addEventListener('DOMContentLoaded', () => {
   const lista = document.getElementById('lista-produtos');
