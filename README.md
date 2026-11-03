@@ -1,82 +1,33 @@
-# 🛒 Mercadinho Belo - Controle
+# Mercadinho Belo — Controle de validade e prevenção de perdas
 
-PWA mobile para controle de vencimento de produtos com múltiplos lotes, salvando dados no **Supabase**.
+Aplicacao web/PWA para uma equipe controlar produtos e lotes de forma compartilhada, acompanhar vencimentos e registrar vendas e descartes. **O sistema nao cadastra, calcula nem exibe precos de produtos.** O campo de conteudo representa apenas volume/peso da embalagem (por exemplo, 2 litros ou 500 gramas).
 
-## 📁 Estrutura
+## Funcionalidades
 
-```
-mercadinho-belo/
-├── index.html          # Interface principal
-├── style.css           # Estética 12 Axes
-├── script.js           # Lógica + Supabase
-├── manifest.json       # PWA
-├── service-worker.js   # Offline
-├── .gitignore
-├── vercel.json         # Deploy Vercel
-└── README.md
-```
+- Login individual por funcionario usando Supabase Auth.
+- Perfis: administrador, gerente, funcionario e patrao.
+- Cadastro compartilhado de produtos e multiplos lotes, com codigo de barras e leitura pela camera.
+- Painel com lotes, unidades em estoque, vencidos, vencimentos em 3/7/15 dias e lotes destacados.
+- Registro de venda, descarte e ajuste com baixa atomica de quantidade e bloqueio de saldo negativo.
+- Destaque de lotes para priorizar vendas, controlado por gerente/administrador.
+- Auditoria de inclusao, edicao e exclusao de produtos/lotes.
+- Historico de movimentacoes e exportacao CSV sem precos.
+- Notificacoes push para lotes vencidos e proximos do vencimento.
+- PWA instalavel; o cache offline guarda somente arquivos estaticos, nunca respostas autenticadas nem dados de estoque.
 
-## 🚀 Funcionalidades
+## Arquivos importantes
 
-- Cadastro de produtos com múltiplos lotes (mesmo nome, datas diferentes)
-- Lista ordenada por vencimento (mais próximo primeiro)
-- Estatísticas: total de lotes, vencem em X dias, já venceram
-- Configuração de intervalo de alerta (dias)
-- Notificações de produtos próximos do vencimento
-- Funciona offline (Service Worker + PWA)
-- Instalável como app no celular
-- Dados salvos no Supabase (nuvem)
+- `index.html`, `style.css`, `script.js`: interface e aplicacao.
+- `migrations_secure.sql`: migracao de autenticacao, RLS, auditoria, movimentacoes e relatorios.
+- `api/funcionarios.js`: criacao/edicao/desativacao de contas via servidor.
+- `api/send-notifications.js`: notificacoes push protegidas por segredo de cron.
+- `service-worker.js`: cache apenas de arquivos estaticos.
+- `CONFIGURACAO-OBRIGATORIA.md`: passo a passo para configurar Supabase e Vercel.
 
-## ☁️ Configurar Supabase
+## Configuracao
 
-1. Crie um projeto em [supabase.com](https://supabase.com)
-2. No SQL Editor, execute:
+Leia e siga **`CONFIGURACAO-OBRIGATORIA.md`** antes de disponibilizar o sistema para os funcionarios. A migracao SQL e as variaveis de ambiente sao obrigatorias. A chave `service_role` e a chave privada VAPID nunca devem ser inseridas no codigo do navegador nem enviadas ao GitHub.
 
-```sql
-CREATE TABLE produtos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## Stack
 
-CREATE TABLE lotes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  produto_id UUID REFERENCES produtos(id) ON DELETE CASCADE,
-  quantidade INTEGER NOT NULL DEFAULT 1,
-  vencimento DATE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE produtos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lotes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Permitir leitura pública" ON produtos FOR SELECT USING (true);
-CREATE POLICY "Permitir leitura pública" ON lotes FOR SELECT USING (true);
-CREATE POLICY "Permitir inserção pública" ON produtos FOR INSERT WITH CHECK (true);
-CREATE POLICY "Permitir inserção pública" ON lotes FOR INSERT WITH CHECK (true);
-CREATE POLICY "Permitir atualização pública" ON produtos FOR UPDATE USING (true);
-CREATE POLICY "Permitir atualização pública" ON lotes FOR UPDATE USING (true);
-CREATE POLICY "Permitir exclusão pública" ON produtos FOR DELETE USING (true);
-CREATE POLICY "Permitir exclusão pública" ON lotes FOR DELETE USING (true);
-```
-
-3. Copie a **Project URL** e a **anon public key** em Settings > API
-4. Edite o `script.js` e preencha:
-
-```javascript
-const SUPABASE_URL = 'https://seu-projeto.supabase.co';
-const SUPABASE_ANON_KEY = 'sua-chave-anon-aqui';
-```
-
-## ☁️ Deploy na Vercel
-
-1. Crie repositório no GitHub com estes arquivos
-2. Acesse [vercel.com](https://vercel.com) → Add New Project → selecione o repo
-3. Deploy automático
-
-## 📱 Uso
-
-Abra o `index.html` no celular → "Adicionar à tela de início"
-
-## 📄 Licença
-
-MIT
+HTML, CSS e JavaScript; Supabase Auth/Postgres com Row Level Security; Vercel Functions; Web Push; PWA.

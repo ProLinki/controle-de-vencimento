@@ -29,16 +29,16 @@ ALTER TABLE lotes ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP WITH TIME ZON
 
 -- 3) Campos de unidade (litros/gramas) e código de barras nos produtos --
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS codigo_barras TEXT;
-ALTER TABLE produtos ADD COLUMN IF NOT EXISTS unidade TEXT;       -- 'litros' ou 'gramas'
-ALTER TABLE produtos ADD COLUMN IF NOT EXISTS valor NUMERIC;      -- quantidade da unidade (ex: 2 litros)
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS unidade TEXT;       -- 'litros', 'gramas' ou 'caixa'
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS conteudo NUMERIC;   -- conteudo da embalagem, nunca preco
 ALTER TABLE lotes ADD COLUMN IF NOT EXISTS codigo_barras TEXT;
 
 -- 4) Catálogo por código de barras (versão para auto-preenchimento) --
 CREATE TABLE IF NOT EXISTS produtos_base (
   codigo_barras TEXT PRIMARY KEY,
   nome TEXT NOT NULL,
-  unidade TEXT NOT NULL,        -- 'litros' ou 'gramas'
-  valor NUMERIC NOT NULL,       -- ex: 2 (litros)
+  unidade TEXT NOT NULL,        -- 'litros', 'gramas' ou 'caixa'
+  conteudo NUMERIC,              -- conteudo da embalagem, nunca preco
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE produtos_base ENABLE ROW LEVEL SECURITY;
@@ -61,17 +61,7 @@ INSERT INTO configuracoes (chave, valor, updated_at)
 VALUES ('dias_alerta', '3', NOW())
 ON CONFLICT (chave) DO NOTHING;
 
--- 6) Administrador inicial ------------------------------------
-INSERT INTO funcionarios (nome, login, senha_hash, salt, cargo, ativo)
-VALUES (
-  'Administrador',
-  'admin',
-  '57b3c9dc47b1a93e1bfa9dca3601a31104ba8e319458ecb2be0c2de0aa667bb9',
-  '0fd748b5b0666de86575eeb10902cd2e',
-  'admin',
-  true
-)
-ON CONFLICT (login) DO NOTHING;
+-- O primeiro administrador e criado no Supabase Auth e vinculado pela migracao segura.
 
 -- 7) Assinaturas de push (notificações server-side) --
 CREATE TABLE IF NOT EXISTS push_subscriptions (

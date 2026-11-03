@@ -1,52 +1,36 @@
-const CACHE = 'mercadinho-v53';
-self.addEventListener('install', () => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
-});
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        const cp = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, cp)).catch(() => {});
-        return r;
-      })
-      .catch(() => caches.match(e.request).then(cached => cached || new Response('', { status: 504, statusText: 'Offline' })))
-  );
-});
+const CACHE = 'mercadinho-static-v60';
+const STATIC_ASSETS = ['./', './index.html', './style.css', './script.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
-// Push server-side: exibe notificação recebida
-self.addEventListener('push', (e) => {
-  let data = { title: 'M.E.F.O. Belo', body: 'Você tem itens vencidos.' };
-  try { if (e.data) data = e.data.json(); } catch (err) { try { data.body = e.data.text(); } catch (e2) {} }
-  e.waitUntil((async () => {
-    try {
-      await self.registration.showNotification(data.title || 'Mercadinho Belo', {
-        body: data.body || '',
-        icon: 'icon-192.png',
-        badge: 'icon-192.png',
-        tag: 'mercadinho-push',
-        renotify: true,
-        data: { url: './index.html' }
-      });
-    } catch (err) {
-      console.error('showNotification falhou:', err);
-    }
-  })());
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC_ASSETS)).catch(() => {}));
+  self.skipWaiting();
 });
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) {
-        if ('focus' in c) return c.focus();
-      }
-      return self.clients.openWindow('./index.html');
-    })
-  );
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  // Nunca armazenar respostas autenticadas, Supabase, APIs ou dados de funcionarios/estoque.
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (!STATIC_ASSETS.some(asset => url.pathname === new URL(asset, self.location.origin).pathname)) return;
+  event.respondWith(fetch(request).then(response => {
+    if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+    return response;
+  }).catch(() => caches.match(request).then(cached => cached || new Response('', { status: 504, statusText: 'Offline' }))));
+});
+self.addEventListener('push', event => {
+  let data = { title: 'Mercadinho Belo', body: 'Existem lotes que precisam de atencao.' };
+  try { if (event.data) data = event.data.json(); } catch (_) {}
+  event.waitUntil(self.registration.showNotification(data.title || 'Mercadinho Belo', {
+    body: data.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'mercadinho-validade', renotify: true,
+    data: { url: data.url || './index.html' }
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const client of list) if ('focus' in client) return client.focus();
+    return self.clients.openWindow(event.notification.data?.url || './index.html');
+  }));
 });

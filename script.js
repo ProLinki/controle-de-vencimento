@@ -3,6 +3,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const DIAS_KEY = 'dias_alerta_mercadinho';
 const HORA_KEY = 'hora_notif_mercadinho';
 const SESSAO_KEY = 'sessao_mercadinho';
+const LOGIN_DOMAIN = 'mercadinhobelo.com';
 const NOTIF_KEY = 'notificacao_diaria_mercadinho';
 const NOTIF_HORA_KEY = 'notificacao_hora_mercadinho';
 
@@ -30,6 +31,10 @@ const inputBusca = document.getElementById('busca');
 const statTotal = document.getElementById('statTotal');
 const statProximos = document.getElementById('statProximos');
 const statVencidos = document.getElementById('statVencidos');
+const statPromocao = document.getElementById('statPromocao');
+const statProx7 = document.getElementById('statProx7');
+const statProx15 = document.getElementById('statProx15');
+const statEstoque = document.getElementById('statEstoque');
 const diasAlertaInput = document.getElementById('diasAlerta');
 const diasAlertaLabel = document.getElementById('diasAlertaLabel');
 const diasDica = document.getElementById('dias-dica');
@@ -76,7 +81,7 @@ const scanVideo = document.getElementById('scan-video');
 const scanStatus = document.getElementById('scan-status');
 const codigoBarrasInput = document.getElementById('codigoBarras');
 const unidadeInput = document.getElementById('unidade');
-const valorInput = document.getElementById('valor');
+const conteudoInput = document.getElementById('conteudo');
 
 // ---------- HELPERS BÁSICOS ----------
 function showToast(msg) {
@@ -89,24 +94,24 @@ function normNome(s) {
 }
 function esc(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
 function labelCargo(c) {
-    return c === 'admin' ? 'Administrador' : c === 'patrao' ? 'Patrão' : 'Funcionário';
+    return c === 'admin' ? 'Administrador' : c === 'gerente' ? 'Gerente' : c === 'patrao' ? 'Patrao' : 'Funcionario';
 }
-async function sha256Hex(txt) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-function novoSalt() {
-    const a = new Uint8Array(16);
-    crypto.getRandomValues(a);
-    return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 // ---------- PERMISSÕES ----------
-function podeInserir() { return !!sessao && (sessao.cargo === 'admin' || sessao.cargo === 'funcionario'); }
+function podeInserir() { return !!sessao && ['admin','gerente','funcionario'].includes(sessao.cargo); }
 function podeAtualizar() { return podeInserir(); }
 function podeExcluirItem() { return !!sessao && sessao.cargo === 'admin'; }
 function podeGerirFuncionarios() { return !!sessao && sessao.cargo === 'admin'; }
 function podeConfigurarDias() { return !!sessao && sessao.cargo === 'admin'; }
+function podeGerirPromocoes() { return !!sessao && ['admin','gerente'].includes(sessao.cargo); }
+async function apiFuncionarios(method, payload) {
+    const { data } = await sb.auth.getSession();
+    const token = data.session && data.session.access_token;
+    if (!token) throw new Error('Sessao expirada. Entre novamente.');
+    const response = await fetch('/api/funcionarios', { method, headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }, body: payload ? JSON.stringify(payload) : undefined });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Falha ao comunicar com o servidor.');
+    return result;
+}
 
 // ---------- SUPABASE ----------
 function initSupabase() {
@@ -128,28 +133,29 @@ async function entrar(e) {
     loginErro.textContent = '';
     const login = loginUsuario.value.trim().toLowerCase();
     const senha = loginSenha.value;
-    if (!login || !senha) { loginErro.textContent = 'Preencha usuário e senha.'; return; }
-    if (!sbReady) { loginErro.textContent = 'Conexão indisponível. Recarregue a página.'; return; }
+    if (!login || !senha) { loginErro.textContent = 'Preencha usuario e senha.'; return; }
+    if (!sbReady) { loginErro.textContent = 'Conexao indisponivel. Recarregue a pagina.'; return; }
     try {
-        const { data, error } = await sb.from('funcionarios').select('*').eq('login', login).maybeSingle();
+        const { data, error } = await sb.auth.signInWithPassword({ email: `${login}@${LOGIN_DOMAIN}`, password: senha });
         if (error) throw error;
-        if (!data || !data.ativo) { loginErro.textContent = 'Usuário não encontrado ou inativo.'; return; }
-        const hash = await sha256Hex(senha + data.salt);
-        if (hash !== data.senha_hash) { loginErro.textContent = 'Senha incorreta.'; return; }
-        sessao = { id: data.id, nome: data.nome, login: data.login, cargo: data.cargo, loginEm: new Date().toISOString() };
-        localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
+        const { data: perfil, error: perfilError } = await sb.from('funcionarios')
+            .select('id,nome,login,cargo,ativo').eq('auth_user_id', data.user.id).maybeSingle();
+        if (perfilError) throw perfilError;
+        if (!perfil || !perfil.ativo) { await sb.auth.signOut(); throw new Error('Usuario inativo ou sem perfil cadastrado.'); }
+        sessao = { ...perfil, loginEm: new Date().toISOString() };
+        localStorage.removeItem(SESSAO_KEY);
         formLogin.reset();
         telaLogin.style.display = 'none';
-        showToast('Bem-vindo(a), ' + data.nome + '!');
+        await sb.from('funcionarios').update({ ultimo_acesso: new Date().toISOString() }).eq('id', perfil.id);
+        showToast('Bem-vindo(a), ' + perfil.nome + '!');
         await iniciarApp();
-    } catch (err) {
-        loginErro.textContent = 'Erro ao entrar: ' + err.message;
-    }
+    } catch (err) { loginErro.textContent = err.message || 'Nao foi possivel entrar.'; }
 }
 
-function sair() {
+async function sair() {
     localStorage.removeItem(SESSAO_KEY);
     sessao = null;
+    if (sb) await sb.auth.signOut();
     location.reload();
 }
 
@@ -163,9 +169,11 @@ function aplicarPermissoes() {
             menuFuncionariosItem.style.display = '';
         } else {
             menuFuncionariosItem.style.display = 'none';
-            menuFuncionariosItem.remove();
         }
     }
+    const fabCadastro = document.getElementById('fab-cadastrar');
+    if (fabCadastro) fabCadastro.style.display = podeInserir() ? '' : 'none';
+    if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
@@ -246,7 +254,7 @@ async function loadProdutos() {
     try {
         const { data, error } = await sb
             .from('lotes')
-            .select('id, produto_id, quantidade, vencimento, codigo_barras, adicionado_por, atualizado_por, atualizado_em, created_at, produtos(nome, codigo_barras, unidade, valor)')
+            .select('id, produto_id, quantidade, vencimento, codigo_barras, adicionado_por, atualizado_por, atualizado_em, created_at, em_promocao, promocao_desde, promocao_motivo, conferido_por, conferido_em, produtos(nome, codigo_barras, unidade, conteudo)')
             .order('vencimento', { ascending: true });
         if (error) throw error;
 
@@ -257,20 +265,20 @@ async function loadProdutos() {
                 id: r.produto_id, nome: nm,
                 codigoBarras: (r.produtos && r.produtos.codigo_barras) || r.codigo_barras || '',
                 unidade: (r.produtos && r.produtos.unidade) || '',
-                valor: (r.produtos && r.produtos.valor) != null ? r.produtos.valor : '',
+                conteudo: (r.produtos && r.produtos.conteudo) != null ? r.produtos.conteudo : '',
                 lotes: []
             };
             map[r.produto_id].lotes.push({
                 id: r.id, quantidade: r.quantidade, vencimento: r.vencimento,
                 codigoBarras: r.codigo_barras,
                 adicionado_por: r.adicionado_por, atualizado_por: r.atualizado_por,
-                atualizado_em: r.atualizado_em, created_at: r.created_at
+                atualizado_em: r.atualizado_em, created_at: r.created_at, em_promocao: !!r.em_promocao, promocao_desde:r.promocao_desde, promocao_motivo:r.promocao_motivo, conferido_por:r.conferido_por, conferido_em:r.conferido_em
             });
         });
         produtos = Object.values(map);
         produtos.sort((a, b) => new Date(a.lotes[0].vencimento) - new Date(b.lotes[0].vencimento));
 
-        limparProdutosOrfaos(data || []);
+        // Nao removemos cadastros automaticamente: exclusoes exigem acao autorizada.
     } catch (e) {
         showToast('Erro carregar: ' + e.message);
     }
@@ -281,23 +289,8 @@ async function loadProdutos() {
     renderStats();
 }
 
-async function limparProdutosOrfaos(lotesAtuais) {
-    try {
-        const { data: todos, error } = await sb.from('produtos').select('id, created_at');
-        if (error || !todos) return;
-        const comLote = new Set(lotesAtuais.map(l => l.produto_id));
-        const agora = Date.now();
-        const orfaos = todos.filter(p => !comLote.has(p.id) && (agora - new Date(p.created_at).getTime()) > 30000);
-        if (orfaos.length === 0) return;
-        for (const o of orfaos) await sb.from('produtos').delete().eq('id', o.id);
-        console.log('Auto-heal: ' + orfaos.length + ' produto(s) sem lote removido(s).');
-    } catch (e) {
-        console.warn('Auto-heal falhou (ignorado):', e.message);
-    }
-}
-
 // ---------- SALVAR (junta nomes iguais) ----------
-async function saveProduto(nome, unidade, valor, qtd, venc, codigoBarras) {
+async function saveProduto(nome, unidade, conteudo, qtd, venc, codigoBarras) {
     if (!sbReady) { showToast('Supabase nao conectado.'); return; }
     if (!podeInserir()) { showToast('Sem permissão para inserir itens.'); return; }
     try {
@@ -309,7 +302,7 @@ async function saveProduto(nome, unidade, valor, qtd, venc, codigoBarras) {
                 codigo_barras: cb,
                 nome: nome.trim(),
                 unidade: unidade,
-                valor: parseFloat(valor)
+                conteudo: Number(conteudo)
             });
             if (ecat) console.warn('Catalogo:', ecat.message);
         }
@@ -324,18 +317,15 @@ async function saveProduto(nome, unidade, valor, qtd, venc, codigoBarras) {
         let pid;
         if (existente) {
             pid = existente.id;
-            // atualiza unidade/valor/codigo se mudaram
-            await sb.from('produtos').update({
-                codigo_barras: cb || existente.codigo_barras,
-                unidade: unidade,
-                valor: parseFloat(valor)
-            }).eq('id', pid);
+            // Atualiza unidade e codigo de barras do cadastro existente
+            const { error: updateError } = await sb.from('produtos').update({ codigo_barras: cb || existente.codigo_barras, unidade, conteudo:Number(conteudo) }).eq('id', pid);
+            if (updateError) throw updateError;
         } else {
             const { data: novo, error: e2 } = await sb.from('produtos').insert({
                 nome: nome.trim(),
                 codigo_barras: cb || null,
                 unidade: unidade,
-                valor: parseFloat(valor)
+                conteudo: Number(conteudo)
             }).select('id').single();
             if (e2) throw e2;
             pid = novo.id;
@@ -368,15 +358,15 @@ async function preencherDoCatalogo(cb) {
         if (data) {
             document.getElementById('nome').value = data.nome || '';
             if (unidadeInput) unidadeInput.value = data.unidade || 'litros';
-            if (valorInput) valorInput.value = data.valor != null ? data.valor : 1;
+            if (conteudoInput) conteudoInput.value = data.conteudo != null ? data.conteudo : 1;
             showToast('Dados preenchidos do catálogo!');
             return;
         }
-        const { data: p } = await sb.from('produtos').select('nome, unidade, valor').eq('codigo_barras', cb).maybeSingle();
+        const { data: p } = await sb.from('produtos').select('nome, unidade, conteudo').eq('codigo_barras', cb).maybeSingle();
         if (p) {
             document.getElementById('nome').value = p.nome || '';
             if (unidadeInput) unidadeInput.value = p.unidade || 'litros';
-            if (valorInput) valorInput.value = p.valor != null ? p.valor : 1;
+            if (conteudoInput) conteudoInput.value = p.conteudo != null ? p.conteudo : 1;
         }
     } catch (e) { console.warn('Catalogo lookup:', e.message); }
 }
@@ -448,17 +438,13 @@ async function salvarUsuario(e) {
     const nome = document.getElementById('us-nome').value.trim();
     const senha = document.getElementById('us-senha').value;
     if (!nome) { showToast('Preencha o nome.'); return; }
-    if (senha && senha.length < 4) { showToast('Senha muito curta (mínimo 4).'); return; }
+    if (senha && senha.length < 8) { showToast('Senha muito curta (minimo 8).'); return; }
     try {
-        const payload = { nome };
-        if (senha) {
-            payload.salt = novoSalt();
-            payload.senha_hash = await sha256Hex(senha + payload.salt);
-        }
-        const { error } = await sb.from('funcionarios').update(payload).eq('id', sessao.id);
+        const { error } = await sb.from('funcionarios').update({ nome, atualizado_em: new Date().toISOString() }).eq('id', sessao.id);
         if (error) throw error;
+        if (senha) { const { error: senhaError } = await sb.auth.updateUser({ password: senha }); if (senhaError) throw senhaError; }
         sessao.nome = nome;
-        localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
+        localStorage.removeItem(SESSAO_KEY);
         aplicarPermissoes();
         showToast('Dados atualizados!');
         if (modalUsuario) modalUsuario.classList.remove('show');
@@ -521,14 +507,14 @@ window.abrirModal = abrirModal;
 function limparFormCadastro() {
     if (formProduto) formProduto.reset();
     const q = document.getElementById('quantidade');
-    const v = document.getElementById('valor');
     const u = document.getElementById('unidade');
+    const c = document.getElementById('conteudo');
     const vc = document.getElementById('vencimento');
     const cb = document.getElementById('codigoBarras');
     const nm = document.getElementById('nome');
     if (q) q.value = 1;
-    if (v) v.value = 1;
     if (u) u.value = 'litros';
+    if (c) c.value = 1;
     if (vc) vc.value = new Date().toISOString().split('T')[0];
     if (cb) cb.value = '';
     if (nm) nm.value = '';
@@ -552,7 +538,8 @@ async function salvarEdicao() {
                 quantidade: qtd,
                 vencimento: venc,
                 atualizado_por: sessao.nome,
-                atualizado_em: new Date().toISOString()
+                atualizado_em: new Date().toISOString(),
+                atualizado_por_id: sessao.id
             })
             .eq('id', editando.loteId);
         if (error) throw error;
@@ -568,11 +555,8 @@ async function salvarEdicao() {
 async function loadFuncionarios() {
     if (!sbReady || !podeGerirFuncionarios()) return;
     try {
-        const { data, error } = await sb.from('funcionarios')
-            .select('id, nome, login, cargo, ativo, created_at')
-            .order('nome', { ascending: true });
-        if (error) throw error;
-        funcionariosCache = data || [];
+        const result = await apiFuncionarios('GET');
+        funcionariosCache = result.funcionarios || [];
         renderFuncionarios();
     } catch (e) {
         showToast('Erro ao carregar funcionários: ' + e.message);
@@ -601,7 +585,7 @@ function renderFuncionarios() {
         bEd.type = 'button'; bEd.className = 'btn-mini mini-editar'; bEd.textContent = 'Editar';
         bEd.addEventListener('click', () => preencherFormFunc(f));
         const bEx = document.createElement('button');
-        bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = 'Excluir';
+        bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = f.ativo ? 'Desativar' : (f.acesso_configurado ? 'Ativar' : 'Configurar acesso');
         bEx.addEventListener('click', () => excluirFuncionario(f));
         acoes.append(bEd, bEx);
         card.append(info, badge, acoes);
@@ -612,7 +596,7 @@ function renderFuncionarios() {
 function preencherFormFunc(f) {
     fnId.value = f.id;
     fnNome.value = f.nome;
-    fnLogin.value = f.login;
+    fnLogin.value = f.login; fnLogin.readOnly = true;
     fnSenha.value = '';
     fnSenha.placeholder = 'Deixe em branco para manter a senha';
     fnCargo.value = f.cargo;
@@ -624,9 +608,9 @@ function preencherFormFunc(f) {
 function limparFormFunc() {
     fnId.value = '';
     fnNome.value = '';
-    fnLogin.value = '';
+    fnLogin.value = ''; fnLogin.readOnly = false;
     fnSenha.value = '';
-    fnSenha.placeholder = 'Mínimo 4 caracteres';
+    fnSenha.placeholder = 'Minimo 8 caracteres';
     fnCargo.value = 'funcionario';
     fnBotao.textContent = 'Adicionar funcionário';
     fnCancelar.style.display = 'none';
@@ -634,69 +618,37 @@ function limparFormFunc() {
 
 async function salvarFuncionario(e) {
     e.preventDefault();
-    if (!podeGerirFuncionarios()) { showToast('Somente o administrador gerencia funcionários.'); return; }
-    const nome = fnNome.value.trim();
-    const login = fnLogin.value.trim().toLowerCase();
-    const senha = fnSenha.value;
-    const cargo = fnCargo.value;
-    const id = fnId.value;
-    if (!nome || !login) { showToast('Preencha nome e usuário.'); return; }
-    if (!id && (!senha || senha.length < 4)) { showToast('Defina uma senha com mínimo 4 caracteres.'); return; }
-    if (id && senha && senha.length < 4) { showToast('Senha muito curta (mínimo 4).'); return; }
+    if (!podeGerirFuncionarios()) { showToast('Somente administrador gerencia funcionarios.'); return; }
+    const nome = fnNome.value.trim(), login = fnLogin.value.trim().toLowerCase();
+    const senha = fnSenha.value, cargo = fnCargo.value, id = fnId.value;
+    if (!nome || !login) { showToast('Preencha nome e usuario.'); return; }
+    if (!id && senha.length < 8) { showToast('A senha inicial deve ter pelo menos 8 caracteres.'); return; }
+    if (id && senha && senha.length < 8) { showToast('A senha deve ter pelo menos 8 caracteres.'); return; }
     try {
-        if (id) {
-            const payload = { nome, login, cargo };
-            if (senha) {
-                payload.salt = novoSalt();
-                payload.senha_hash = await sha256Hex(senha + payload.salt);
-            }
-            const { error } = await sb.from('funcionarios').update(payload).eq('id', id);
-            if (error) throw error;
-            // Se o admin alterou o próprio login, atualiza a sessão local
-            const { data: meu } = await sb.from('funcionarios').select('id, nome, login, cargo').eq('id', sessao.id).maybeSingle();
-            if (meu) {
-                sessao = { id: meu.id, nome: meu.nome, login: meu.login, cargo: meu.cargo, loginEm: sessao.loginEm || new Date().toISOString() };
-                localStorage.setItem(SESSAO_KEY, JSON.stringify(sessao));
-                aplicarPermissoes();
-            }
-            showToast('Funcionário atualizado!');
-        } else {
-            const salt = novoSalt();
-            const { error } = await sb.from('funcionarios').insert({
-                nome, login, cargo, ativo: true,
-                salt,
-                senha_hash: await sha256Hex(senha + salt)
-            });
-            if (error) throw error;
-            showToast('Funcionário adicionado!');
-        }
-        limparFormFunc();
-        await loadFuncionarios();
-    } catch (err) {
-        if (err.code === '23505') showToast('Este usuário (login) já existe.');
-        else showToast('Erro: ' + err.message);
-    }
+        if (id) await apiFuncionarios('PATCH', { id, nome, cargo, senha });
+        else await apiFuncionarios('POST', { nome, login, cargo, senha });
+        limparFormFunc(); await loadFuncionarios(); showToast(id ? 'Funcionario atualizado!' : 'Funcionario criado!');
+    } catch (err) { showToast('Erro: ' + err.message); }
 }
 
 async function excluirFuncionario(f) {
     if (!podeGerirFuncionarios()) { showToast('Sem permissão.'); return; }
     if (f.id === sessao.id) { showToast('Você não pode excluir o próprio cadastro.'); return; }
-    if (f.cargo === 'admin') {
+    if (f.ativo && f.cargo === 'admin') {
         const totalAdmins = funcionariosCache.filter(x => x.cargo === 'admin' && x.ativo).length;
         if (totalAdmins <= 1) { showToast('Deve existir pelo menos 1 administrador.'); return; }
     }
-    if (!confirm('Excluir "' + f.nome + '"?')) return;
+    if (!f.ativo && !f.acesso_configurado) { preencherFormFunc(f); fnSenha.placeholder = 'Defina uma nova senha (minimo 8 caracteres)'; fnSenha.focus(); showToast('Cadastro legado: defina uma nova senha para criar o acesso seguro.'); return; }
+    if (!confirm((f.ativo ? 'Desativar ' : 'Reativar ') + '"' + f.nome + '"?')) return;
     try {
-        const { error } = await sb.from('funcionarios').delete().eq('id', f.id);
-        if (error) throw error;
-        showToast('Funcionário excluído.');
+        if (f.ativo) await apiFuncionarios('DELETE', { id: f.id });
+        else await apiFuncionarios('PATCH', { id: f.id, active: true });
+        showToast(f.ativo ? 'Funcionario desativado.' : 'Funcionario reativado.');
         await loadFuncionarios();
-    } catch (e) {
-        showToast('Erro ao excluir: ' + e.message);
-    }
+    } catch (e) { showToast('Erro ao desativar: ' + e.message); }
 }
 
-const VAPID_PUBLIC_KEY = 'BE4K-sQoS03PFNg8xV1CNIUvI4r1pADFJNjPTJqIA8U342S7tKcv_VQ4CNNBN5C7jlXqZx9WvGUHhiHK0j0M3Hw';
+const VAPID_PUBLIC_KEY = 'BLWAiQcRiu4D-x6PEerVLDGLPdlbCffh1QquLAZWi_QSjBI-ka2wLM_Eoz01LCTM2EPUNKaXOVmXod5KtHAz0IU';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -712,16 +664,21 @@ async function ativarPush() {
     try {
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();
-        if (!sub) {
-            sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+        const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        if (sub && sub.options && sub.options.applicationServerKey) {
+            const currentKey = new Uint8Array(sub.options.applicationServerKey);
+            const sameKey = currentKey.length === expectedKey.length && currentKey.every((value,index) => value === expectedKey[index]);
+            if (!sameKey) { await sub.unsubscribe(); sub = null; }
         }
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: expectedKey });
         const json = sub.toJSON();
         await sb.from('push_subscriptions').upsert({
             endpoint: sub.endpoint,
+            funcionario_id: sessao.id,
             p256dh: json.keys.p256dh,
             auth: json.keys.auth,
             user_agent: navigator.userAgent
-        }, { onConflict: 'endpoint' });
+        }, { onConflict: 'endpoint,funcionario_id' });
     } catch (e) { console.warn('Push subscribe:', e.message); }
 }
 function notifDisponivel() { return ('Notification' in window); }
@@ -897,11 +854,85 @@ function fmtDataHora(iso) {
         ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+async function registrarSaida(loteId, tipo) {
+    if (!podeInserir()) { showToast('Sem permissao para registrar saidas.'); return; }
+    const quantidade = Number(prompt(`Quantidade para ${tipo === 'venda' ? 'venda' : 'descarte'}:`));
+    if (!Number.isInteger(quantidade) || quantidade < 1) return;
+    const observacao = prompt('Observacao (opcional):') || '';
+    try {
+        const { error } = await sb.rpc('registrar_movimentacao', { p_lote_id:loteId, p_tipo:tipo, p_quantidade:quantidade, p_observacao:observacao });
+        if (error) throw error;
+        await loadProdutos(); showToast(tipo === 'venda' ? 'Venda registrada e estoque atualizado.' : 'Descarte registrado e estoque atualizado.');
+    } catch (e) { showToast('Nao foi possivel registrar: ' + e.message); }
+}
+
+async function marcarConferido(loteId) {
+    if (!podeInserir()) return;
+    try {
+        const { error } = await sb.from('lotes').update({ conferido_por:sessao.nome, conferido_por_id:sessao.id, conferido_em:new Date().toISOString() }).eq('id',loteId);
+        if (error) throw error;
+        await loadProdutos(); showToast('Lote marcado como conferido.');
+    } catch(e) { showToast('Erro ao conferir lote: '+e.message); }
+}
+
+async function ajustarEstoque(loteId, saldoAtual) {
+    if (!podeGerirPromocoes()) return;
+    const novoSaldo = Number(prompt('Informe a nova quantidade fisica contada:', String(saldoAtual)));
+    if (!Number.isInteger(novoSaldo) || novoSaldo < 0) return;
+    const observacao = prompt('Motivo do ajuste (opcional):') || '';
+    try {
+        const { error } = await sb.rpc('ajustar_estoque', { p_lote_id:loteId, p_nova_quantidade:novoSaldo, p_observacao:observacao });
+        if (error) throw error;
+        await loadProdutos(); showToast('Estoque ajustado e historico registrado.');
+    } catch(e) { showToast('Erro ao ajustar estoque: '+e.message); }
+}
+
+async function alternarPromocao(lote) {
+    if (!podeGerirPromocoes()) return;
+    const motivo = lote.em_promocao ? null : (prompt('Motivo/destaque (ex.: priorizar venda esta semana):') || 'Prioridade de venda');
+    try {
+        const { error } = await sb.from('lotes').update({ em_promocao:!lote.em_promocao, promocao_desde:lote.em_promocao?null:new Date().toISOString().slice(0,10), promocao_motivo:motivo }).eq('id',lote.id);
+        if (error) throw error;
+        await loadProdutos(); showToast(lote.em_promocao ? 'Destaque removido.' : 'Lote destacado para venda.');
+    } catch (e) { showToast('Erro ao atualizar destaque: ' + e.message); }
+}
+
+async function abrirHistorico() {
+    const modal = document.getElementById('modal-historico');
+    const area = document.getElementById('historico-conteudo');
+    const resumo = document.getElementById('relatorio-resumo');
+    if (!modal || !area) return;
+    area.textContent = 'Carregando historico...'; if (resumo) resumo.textContent='Carregando indicadores...'; modal.classList.add('show');
+    try {
+        const [{ data, error }, { data: logs, error: auditError }, { data: totals, error: totalsError }] = await Promise.all([
+          sb.from('movimentacoes').select('tipo,quantidade,observacao,funcionario_nome,created_at,produtos(nome)').order('created_at',{ascending:false}).limit(100),
+          sb.from('auditoria').select('tabela,acao,funcionario_nome,created_at').order('created_at',{ascending:false}).limit(100),
+          sb.from('resumo_perdas').select('mes,tipo,operacoes,unidades').order('mes',{ascending:false}).limit(24)
+        ]);
+        if (error) throw error; if (auditError) throw auditError; if (totalsError) throw totalsError;
+        if (resumo) { resumo.innerHTML=''; (totals||[]).forEach(t=>{ const row=document.createElement('div'); row.className='historico-row'; const mes=new Date(t.mes+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); row.textContent=`${mes} · ${t.tipo}: ${t.operacoes} operacao(oes), ${t.unidades} unidade(s)`; resumo.appendChild(row); }); if (!(totals||[]).length) resumo.textContent='Ainda nao ha dados para consolidar.'; }
+        area.innerHTML = '';
+        const entries = [...(data||[]).map(m=>({date:m.created_at, text:`${m.tipo.toUpperCase()} · ${m.produtos?.nome||'Produto removido'} · ${m.quantidade} un · ${m.funcionario_nome}${m.observacao?' · '+m.observacao:''}`})), ...(logs||[]).map(a=>({date:a.created_at,text:`${a.acao.toUpperCase()} · ${a.tabela} · ${a.funcionario_nome}`}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,150);
+        if (!entries.length) { area.textContent = 'Ainda nao existem movimentacoes.'; return; }
+        entries.forEach(entry => { const row=document.createElement('div'); row.className='historico-row'; row.textContent=`${new Date(entry.date).toLocaleString('pt-BR')} · ${entry.text}`; area.appendChild(row); });
+    } catch(e) { area.textContent='Erro ao carregar historico: '+e.message; }
+}
+
+async function exportarRelatorio() {
+    try {
+        const { data, error } = await sb.from('movimentacoes').select('created_at,tipo,quantidade,funcionario_nome,observacao,produtos(nome)').order('created_at',{ascending:false});
+        if (error) throw error;
+        const rows=[['Data','Tipo','Produto','Quantidade','Funcionario','Observacao'],...(data||[]).map(m=>[new Date(m.created_at).toLocaleString('pt-BR'),m.tipo,m.produtos?.nome||'Produto removido',m.quantidade,m.funcionario_nome,m.observacao||''])];
+        const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+        const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='relatorio-movimentacoes.csv'; a.click(); URL.revokeObjectURL(url);
+    } catch(e) { showToast('Erro ao exportar relatorio: '+e.message); }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
         if (termo && !normNome(p.nome).includes(termo)) return false;
-        return p.lotes.some(l => diasRestantes(l.vencimento) <= DIAS_ALERTA);
+        return p.lotes.some(l => (parseInt(l.quantidade, 10) || 0) > 0);
     });
 
     listaProdutos.innerHTML = '';
@@ -915,9 +946,10 @@ function renderLista() {
         const card = document.createElement('div');
         card.className = 'produto-card';
 
-        const totalQtd = p.lotes.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
-        // lote mais próximo do vencimento (para o resumo)
-        const lotesOrd = [...p.lotes].sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento));
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        const totalQtd = lotesAtivos.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
+        // Lote ativo mais proximo do vencimento determina a prioridade visual.
+        const lotesOrd = [...lotesAtivos].sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento));
         const proximo = lotesOrd[0];
         const dProx = proximo ? diasRestantes(proximo.vencimento) : 0;
         const sProx = status(dProx);
@@ -928,7 +960,7 @@ function renderLista() {
             '<div class="nome">' + esc(p.nome) + '</div>' +
             '<div class="produto-info">' +
             '<span>Total: ' + totalQtd + ' un</span>' +
-            (p.unidade ? '<span>' + esc(p.valor) + ' ' + esc(p.unidade) + '</span>' : '') +
+            (p.unidade ? '<span>Conteudo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) + '</span>' : '') +
             '</div>' +
             '<div class="resumo-dias">' +
             '<span class="status status-' + sProx.c + '">' + sProx.t + '</span>' +
@@ -943,7 +975,7 @@ function renderLista() {
         const listaLotes = document.createElement('div');
         listaLotes.className = 'lote-lista';
 
-        p.lotes.forEach(l => {
+        lotesAtivos.forEach(l => {
             const d = diasRestantes(l.vencimento);
             const s = status(d);
             const item = document.createElement('div');
@@ -951,6 +983,7 @@ function renderLista() {
 
             let dono = '<div class="lote-dono">👤 ' + esc(l.adicionado_por || '—') + ' · ' + fmtDataHora(l.created_at);
             if (l.atualizado_em) dono += ' · ✏️ atualizado por ' + esc(l.atualizado_por || '—') + ' em ' + fmtDataHora(l.atualizado_em);
+            if (l.conferido_em) dono += ' · ✓ conferido por ' + esc(l.conferido_por || '—') + ' em ' + fmtDataHora(l.conferido_em);
             dono += '</div>';
 
             item.innerHTML =
@@ -959,6 +992,7 @@ function renderLista() {
                 '<span class="status status-' + s.c + '">' + s.t + '</span></div>' +
                 '<div class="meta"><span><strong>Vence:</strong> ' + fmtBR(l.vencimento) + '</span>' +
                 '<span class="dias">' + txtDias(d) + '</span></div>' +
+                (l.em_promocao ? '<div class="lote-dono"><strong>EM DESTAQUE PARA VENDA</strong>' + (l.promocao_motivo ? ' · ' + esc(l.promocao_motivo) : '') + '</div>' : '') +
                 (l.codigoBarras ? '<div class="lote-dono">Cód: ' + esc(l.codigoBarras) + '</div>' : '') +
                 dono +
                 '</div>';
@@ -972,9 +1006,21 @@ function renderLista() {
                     bEd.addEventListener('click', (ev) => { ev.stopPropagation(); abrirModal(l.id, p.id); });
                     acoes.appendChild(bEd);
                 }
+                if (sessao && ['admin','gerente','funcionario'].includes(sessao.cargo) && (parseInt(l.quantidade,10)||0) > 0) {
+                    if (d >= 0) {
+                        const bVenda = document.createElement('button'); bVenda.type='button'; bVenda.className='btn-mini mini-editar'; bVenda.textContent='Registrar venda';
+                        bVenda.addEventListener('click', ev => { ev.stopPropagation(); registrarSaida(l.id, 'venda'); }); acoes.appendChild(bVenda);
+                    }
+                    const bDesc = document.createElement('button'); bDesc.type='button'; bDesc.className='btn-mini mini-excluir'; bDesc.textContent='Descarte';
+                    bDesc.addEventListener('click', ev => { ev.stopPropagation(); registrarSaida(l.id, 'descarte'); }); acoes.appendChild(bDesc);
+                }
+                if (podeGerirPromocoes()) {
+                    const bPromo = document.createElement('button'); bPromo.type='button'; bPromo.className='btn-mini mini-editar'; bPromo.textContent=l.em_promocao?'Retirar destaque':'Destacar para venda';
+                    bPromo.addEventListener('click', ev => { ev.stopPropagation(); alternarPromocao(l); }); acoes.appendChild(bPromo);
+                }
                 if (ex) {
                     const bEx = document.createElement('button');
-                    bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = 'Excluir';
+                    bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = 'Excluir lote';
                     bEx.addEventListener('click', (ev) => { ev.stopPropagation(); deleteLote(l.id); });
                     acoes.appendChild(bEx);
                 }
@@ -999,15 +1045,22 @@ function renderLista() {
 }
 
 function renderStats() {
-    let tot = 0, prox = 0, venc = 0;
+    let tot = 0, prox = 0, venc = 0, promo = 0, estoque = 0, prox7 = 0, prox15 = 0;
     produtos.forEach(p => p.lotes.forEach(l => {
-        tot++;
+        const qtd = parseInt(l.quantidade,10) || 0;
+        if (qtd <= 0) return;
+        tot++; estoque += qtd;
+        if (l.em_promocao) promo++;
         const d = diasRestantes(l.vencimento);
-        if (d < 0) venc++; else if (d <= DIAS_ALERTA) prox++;
+        if (d < 0) venc++; else { if (d <= DIAS_ALERTA) prox++; if (d <= 7) prox7++; if (d <= 15) prox15++; }
     }));
     statTotal.textContent = tot;
     statProximos.textContent = prox;
     statVencidos.textContent = venc;
+    if (statPromocao) statPromocao.textContent = promo;
+    if (statProx7) statProx7.textContent = prox7;
+    if (statProx15) statProx15.textContent = prox15;
+    if (statEstoque) statEstoque.textContent = estoque;
 }
 
 // ---------- INICIALIZAÇÃO POR SESSÃO ----------
@@ -1027,23 +1080,20 @@ async function iniciarApp() {
 document.addEventListener('DOMContentLoaded', () => { try {
     initSupabase();
 
-    // Restaura sessão
-    try {
-        const salva = localStorage.getItem(SESSAO_KEY);
-        if (salva) {
-            sessao = JSON.parse(salva);
-            if (sessao && !sessao.loginEm) sessao.loginEm = new Date().toISOString();
+    // Restaura sessao autenticada no Supabase; localStorage nao define cargo nem permissao.
+    (async () => {
+      try {
+        const { data: authState } = await sb.auth.getSession();
+        const user = authState.session && authState.session.user;
+        if (user) {
+          const { data: perfil, error } = await sb.from('funcionarios').select('id,nome,login,cargo,ativo').eq('auth_user_id', user.id).maybeSingle();
+          if (error) throw error;
+          if (perfil && perfil.ativo) { sessao = { ...perfil, loginEm: new Date().toISOString() }; telaLogin.style.display = 'none'; await iniciarApp(); return; }
+          await sb.auth.signOut();
         }
-    } catch (e) { sessao = null; }
-
-    if (sessao && sessao.id) {
-        telaLogin.style.display = 'none';
-        iniciarApp();
-    } else {
-        sessao = null;
-        telaLogin.style.display = 'flex';
-        loginUsuario.focus();
-    }
+      } catch (err) { console.error('Restauracao de sessao:', err); }
+      sessao = null; telaLogin.style.display = 'flex'; loginUsuario.focus();
+    })();
 
     // Login
     formLogin.addEventListener('submit', entrar);
@@ -1053,12 +1103,12 @@ document.addEventListener('DOMContentLoaded', () => { try {
         e.preventDefault();
         const nome = document.getElementById('nome').value.trim();
         const unidade = document.getElementById('unidade').value;
-        const valor = document.getElementById('valor').value;
+        const conteudo = Number(document.getElementById('conteudo').value);
         const qtd = parseInt(document.getElementById('quantidade').value, 10);
         const cb = document.getElementById('codigoBarras').value.trim();
         const venc = document.getElementById('vencimento').value;
-        if (!nome || !qtd || !venc || !unidade || !valor) { showToast('Preencha todos os campos.'); return; }
-        await saveProduto(nome, unidade, valor, qtd, venc, cb);
+        if (!nome || !qtd || !venc || !unidade || !Number.isFinite(conteudo) || conteudo <= 0) { showToast('Preencha todos os campos corretamente.'); return; }
+        await saveProduto(nome, unidade, conteudo, qtd, venc, cb);
         limparFormCadastro();
         if (modalCadastro) modalCadastro.classList.remove('show');
     });
@@ -1172,6 +1222,10 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (!podeGerirFuncionarios()) { showToast('Somente o administrador acessa funcionários.'); return; }
         fecharMenu(); abrirModalGenerico(modalFuncionarios); if (podeGerirFuncionarios()) loadFuncionarios();
     });
+    const menuHistorico = document.getElementById('menu-historico');
+    if (menuHistorico) menuHistorico.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirHistorico(); });
+    const btnExportarRelatorio = document.getElementById('btn-exportar-relatorio');
+    if (btnExportarRelatorio) btnExportarRelatorio.addEventListener('click', exportarRelatorio);
     if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
 
     // Código de barras: lookup ao sair do campo
