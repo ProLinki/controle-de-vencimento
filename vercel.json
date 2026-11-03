@@ -6,11 +6,5 @@
     { "src": "/service-worker.js", "headers": { "Access-Control-Allow-Origin": "*" } },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "crons": [
-     {
-      "path": "/api/send-notifications",
-      "schedule": "*/5 * * * *"
-    }
   ]
 }
