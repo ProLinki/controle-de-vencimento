@@ -1029,7 +1029,10 @@ function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
         if (termo && !normNome(p.nome).includes(termo)) return false;
-        return p.lotes.some(l => (parseInt(l.quantidade, 10) || 0) > 0);
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade, 10) || 0) > 0);
+        if (lotesAtivos.length === 0) return false;
+        // A lista passa a respeitar o prazo de alerta configurado (dias).
+        return lotesAtivos.some(l => diasRestantes(l.vencimento) <= DIAS_ALERTA);
     });
 
     listaProdutos.innerHTML = '';
