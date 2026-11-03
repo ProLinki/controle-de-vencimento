@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=53">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
@@ -40,6 +40,10 @@
     <button type="button" id="btn-menu" class="btn-menu" aria-label="Menu"><span></span><span></span><span></span></button>
     <h1 class="toolbar-title">M.E.F.O. Belo</h1>
     <div class="toolbar-spacer"></div>
+    <div class="user-chip" id="user-chip" aria-live="polite">
+      <span class="nome" id="user-nome"></span>
+      <span id="user-cargo" class="cargo-badge"></span>
+    </div>
   </div>
 </header>
 
@@ -64,6 +68,15 @@
 <!-- ===== CONTEÚDO PRINCIPAL ===== -->
 <main class="container">
   <div class="main-content">
+
+    <section class="dashboard-heading">
+      <div>
+        <p class="eyebrow">PAINEL DE CONTROLE</p>
+        <h2>Validade dos produtos</h2>
+        <p class="dashboard-subtitle">Acompanhe os lotes e evite perdas no estoque.</p>
+      </div>
+      <div class="heading-mark" aria-hidden="true">✦</div>
+    </section>
 
     <!-- Métricas -->
     <section class="stats">
@@ -184,7 +197,7 @@
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
 <div id="toast" class="toast"></div>
 
-<script src="script.js?v=48"></script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=49').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
+<script src="script.js?v=53"></script>
+<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=53').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>
