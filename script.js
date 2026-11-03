@@ -128,28 +128,78 @@ function initSupabase() {
 }
 
 // ---------- LOGIN / SESSÃO ----------
+
 async function entrar(e) {
     e.preventDefault();
     loginErro.textContent = '';
-    const login = loginUsuario.value.trim().toLowerCase();
+
+    const identificador = loginUsuario.value.trim().toLowerCase();
     const senha = loginSenha.value;
-    if (!login || !senha) { loginErro.textContent = 'Preencha usuario e senha.'; return; }
-    if (!sbReady) { loginErro.textContent = 'Conexao indisponivel. Recarregue a pagina.'; return; }
+
+    if (!identificador || !senha) {
+        loginErro.textContent = 'Preencha usuário e senha.';
+        return;
+    }
+
+    if (!sbReady) {
+        loginErro.textContent = 'Conexão indisponível. Recarregue a página.';
+        return;
+    }
+
     try {
-        const { data, error } = await sb.auth.signInWithPassword({ email: `${login}@${LOGIN_DOMAIN}`, password: senha });
-        if (error) throw error;
-        const { data: perfil, error: perfilError } = await sb.from('funcionarios')
-            .select('id,nome,login,cargo,ativo').eq('auth_user_id', data.user.id).maybeSingle();
-        if (perfilError) throw perfilError;
-        if (!perfil || !perfil.ativo) { await sb.auth.signOut(); throw new Error('Usuario inativo ou sem perfil cadastrado.'); }
-        sessao = { ...perfil, loginEm: new Date().toISOString() };
+        // Se informar e-mail, utiliza o e-mail.
+        // Se informar login, monta login@mercadinhobelo.com.
+        const email = identificador.includes('@')
+            ? identificador
+            : `${identificador}@${LOGIN_DOMAIN}`;
+
+        const { data, error } = await sb.auth.signInWithPassword({
+            email,
+            password: senha
+        });
+
+        if (error) throw new Error('Falha na autenticação: ' + error.message);
+
+        const { data: perfil, error: perfilError } = await sb
+            .from('funcionarios')
+            .select('id,nome,login,cargo,ativo')
+            .eq('auth_user_id', data.user.id)
+            .maybeSingle();
+
+        if (perfilError) {
+            throw new Error('Falha ao consultar funcionários: ' + perfilError.message);
+        }
+
+        if (!perfil || !perfil.ativo) {
+            await sb.auth.signOut();
+            throw new Error('Usuário sem cadastro ativo na tabela funcionarios.');
+        }
+
+        sessao = {
+            ...perfil,
+            loginEm: new Date().toISOString()
+        };
+
         localStorage.removeItem(SESSAO_KEY);
         formLogin.reset();
         telaLogin.style.display = 'none';
-        await sb.from('funcionarios').update({ ultimo_acesso: new Date().toISOString() }).eq('id', perfil.id);
+
+        const { error: updateError } = await sb
+            .from('funcionarios')
+            .update({ ultimo_acesso: new Date().toISOString() })
+            .eq('id', perfil.id);
+
+        if (updateError) {
+            console.warn('Não foi possível atualizar último acesso:', updateError.message);
+        }
+
         showToast('Bem-vindo(a), ' + perfil.nome + '!');
         await iniciarApp();
-    } catch (err) { loginErro.textContent = err.message || 'Nao foi possivel entrar.'; }
+
+    } catch (err) {
+        loginErro.textContent = err.message || 'Não foi possível entrar.';
+        console.error('Erro no login:', err);
+    }
 }
 
 async function sair() {
