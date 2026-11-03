@@ -570,10 +570,10 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .container { max-width:1240px; padding:20px 28px 14px; }
 .main-content { gap:12px; }
 .stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.stat-item { background:rgba(255,253,248,.92); border:1px solid rgba(60,52,32,.10); border-radius:16px; padding:12px 10px; box-shadow:0 4px 12px rgba(50,43,25,.04); }
-.stat-item.highlight { border-color:rgba(191,145,22,.34); }
-.stat-number { color:#a77a0a; font-size:1.35rem; margin-bottom:2px; }
-.stat-label { color:#777366; font-size:.6rem; line-height:1.2; }
+.stat-item { background:#24221d; color:#fffdf8; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px 10px; box-shadow:0 6px 16px rgba(34,30,20,.10); }
+.stat-item.highlight { border-color:rgba(255,255,255,.08); }
+.stat-number { color:#f5c542; font-size:1.45rem; margin-bottom:2px; font-weight:800; }
+.stat-label { color:#c9c3b6; font-size:.62rem; line-height:1.2; text-transform:uppercase; letter-spacing:.4px; }
 .dashboard-intro { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-radius:16px; background:#24221d; color:#fffdf8; box-shadow:0 6px 16px rgba(34,30,20,.10); }
 .dashboard-intro .eyebrow { color:#f5c542; font-size:.62rem; font-weight:800; letter-spacing:1.2px; margin-bottom:3px; }
 .dashboard-intro h2 { color:#fffdf8; font-size:1.05rem; font-weight:800; margin-bottom:2px; }
@@ -631,6 +631,10 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .btn-outline { background:#f3eee3; color:#302d25; border-color:#d9d1bf; box-shadow:none; }
 .btn-outline:hover { background:#e9e1d1; }
 .input-group label { color:#514c3f; }
+
+.pull-refresh { position:fixed; top:72px; left:50%; transform:translate(-50%,-140%); background:#24221d; color:#fffdf8; padding:8px 14px; border-radius:12px; font-size:.82rem; z-index:1200; transition:transform .2s ease, opacity .2s; opacity:0; pointer-events:none; box-shadow:0 6px 16px rgba(34,30,20,.12); }
+.pull-refresh.show { transform:translate(-50%,0); opacity:1; }
+.pull-refresh.ready { color:#f5c542; }
 
 @media (min-width: 1024px) {
   .stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }

@@ -877,6 +877,53 @@ async function verificarNotificacaoHorario() {
     const ok = await enviarNotificacao(aviso.titulo, aviso.corpo, true);
     if (ok) localStorage.setItem(NOTIF_HORA_KEY, hoje);
 }
+// ---------- PULL TO REFRESH (mobile) ----------
+document.addEventListener('DOMContentLoaded', () => {
+  const lista = document.getElementById('lista-produtos');
+  const indicator = document.getElementById('pull-refresh');
+  if (!lista || !indicator) return;
+  let startY = null;
+  let distance = 0;
+  let refreshing = false;
+  lista.addEventListener('touchstart', (e) => {
+    if (refreshing) return;
+    if (lista.scrollTop <= 0) startY = e.touches[0].clientY;
+  }, { passive: true });
+  lista.addEventListener('touchmove', (e) => {
+    if (startY === null || refreshing) return;
+    distance = e.touches[0].clientY - startY;
+    if (distance > 0) {
+      const d = Math.min(distance, 120);
+      indicator.style.transform = 'translate(-50%, ' + (-100 + d * 0.8) + '%)';
+      indicator.style.opacity = String(Math.min(distance / 80, 1));
+      if (distance > 80) indicator.classList.add('ready'); else indicator.classList.remove('ready');
+    }
+  }, { passive: true });
+  lista.addEventListener('touchend', async () => {
+    if (startY === null || refreshing) { startY = null; distance = 0; return; }
+    if (distance > 80) {
+      refreshing = true;
+      indicator.textContent = 'Atualizando...';
+      indicator.classList.add('show', 'ready');
+      try {
+        await loadConfig();
+        await loadProdutos();
+        if (typeof podeGerirFuncionarios === 'function' && podeGerirFuncionarios()) await loadFuncionarios();
+        showToast('Dados atualizados.');
+      } catch (err) {
+        showToast('Falha ao atualizar: ' + (err.message || err));
+      }
+      refreshing = false;
+    }
+    startY = null;
+    distance = 0;
+    indicator.classList.remove('show', 'ready');
+    indicator.style.transform = '';
+    indicator.style.opacity = '';
+    indicator.textContent = 'Atualizando...';
+  });
+});
+
 function diasRestantes(iso) {
     const h = new Date(); h.setHours(0, 0, 0, 0);
     const a = new Date(iso); a.setHours(0, 0, 0, 0);
