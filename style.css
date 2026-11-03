@@ -557,15 +557,19 @@ body {
 }
 body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8e1d5 100%); color:var(--text-main); }
 .app-toolbar { background:#211f1b; border-bottom:1px solid rgba(255,255,255,.08); box-shadow:0 5px 18px rgba(0,0,0,.12); }
-.toolbar-container { max-width:1240px; margin:auto; padding:16px 28px; }
-.toolbar-title { color:#f5c542; text-align:left; font-size:1.1rem; }
+.toolbar-container { max-width:1240px; margin:auto; padding:16px 28px; display:flex; align-items:center; gap:12px; }
+.toolbar-title { color:#f5c542; text-align:left; font-size:1.1rem; flex:0 0 auto; }
 .btn-menu span { background:#fffdf8; }
-.toolbar-user { margin:0; justify-content:flex-end; min-width:0; }
+.toolbar-search { flex:1 1 260px; max-width:420px; min-width:120px; }
+.toolbar-search input[type="text"] { width:100%; min-height:40px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fffdf8; font-family:'Plus Jakarta Sans',sans-serif; font-size:.88rem; outline:none; transition:border-color .2s,background .2s; }
+.toolbar-search input[type="text"]::placeholder { color:#c9c3b6; }
+.toolbar-search input[type="text"]:focus { border-color:#f5c542; background:rgba(255,255,255,.12); }
+.toolbar-user { margin:0; justify-content:flex-end; min-width:0; flex:0 0 auto; }
 .toolbar-user .nome { color:#fffdf8; font-size:.82rem; font-weight:700; }
 .toolbar-user .cargo-badge { font-size:.6rem; }
 .container { max-width:1240px; padding:20px 28px 14px; }
 .main-content { gap:12px; }
-.stats { grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .stat-item { background:rgba(255,253,248,.92); border:1px solid rgba(60,52,32,.10); border-radius:16px; padding:12px 10px; box-shadow:0 4px 12px rgba(50,43,25,.04); }
 .stat-item.highlight { border-color:rgba(191,145,22,.34); }
 .stat-number { color:#a77a0a; font-size:1.35rem; margin-bottom:2px; }
@@ -629,7 +633,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .input-group label { color:#514c3f; }
 
 @media (min-width: 1024px) {
-  .stats { grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; }
+  .stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
   .stat-item { padding:10px 6px; }
   .stat-number { font-size:1.25rem; }
   .stat-label { font-size:.56rem; }

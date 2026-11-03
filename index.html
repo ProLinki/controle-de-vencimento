@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=61">
+  <link rel="stylesheet" href="style.css?v=62">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
@@ -38,7 +38,10 @@
 <header class="app-toolbar">
   <div class="toolbar-container">
     <button type="button" id="btn-menu" class="btn-menu" aria-label="Menu"><span></span><span></span><span></span></button>
-    <h1 class="toolbar-title">M.E.F.O. Belo</h1>
+    <h1 class="toolbar-title">Inventário</h1>
+    <div class="toolbar-search">
+      <input type="text" id="busca" placeholder="Buscar produto...">
+    </div>
     <div id="user-chip" class="user-chip toolbar-user" style="display:none"><span id="user-nome" class="nome"></span><span id="user-cargo" class="cargo-badge"></span></div>
   </div>
 </header>
@@ -77,12 +80,7 @@
       <div class="stat-item"><div class="stat-number" id="statPromocao">0</div><div class="stat-label">Lotes destacados</div></div>
     </section>
 
-    <section class="dashboard-intro"><div><p class="eyebrow">GESTAO INTELIGENTE DE ESTOQUE</p><h2>Controle de validade</h2><p>Priorize os lotes certos, registre as saidas e reduza perdas.</p></div><span class="intro-mark">MB</span></section>
-
     <!-- Lista de produtos -->
-    <div class="search-box search-group">
-      <input type="text" id="busca" placeholder="Buscar produto...">
-    </div>
     <div class="produto-lista" id="lista-produtos"></div>
     <div id="vazio" class="empty-state"><p>Nenhum lote cadastrado ainda.</p></div>
 
