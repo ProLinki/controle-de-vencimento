@@ -3,7 +3,7 @@
   "short_name": "M.E.F.O. Belo",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#eee9df",
+  "background_color": "#211f1b",
   "theme_color": "#211f1b",
   "orientation": "portrait",
   "icons": [
