@@ -396,8 +396,26 @@ async function preencherDoCatalogo(cb) {
     } catch (e) { console.warn('Catalogo lookup:', e.message); }
 }
 
+async function preencherBaseDoCatalogo(cb) {
+    cb = (cb || '').trim();
+    if (!cb || !sbReady) return;
+    try {
+        const { data } = await sb.from('produtos_base').select('*').eq('codigo_barras', cb).maybeSingle();
+        if (data) {
+            const nome = document.getElementById('pb-nome');
+            const unidade = document.getElementById('pb-unidade');
+            const conteudo = document.getElementById('pb-conteudo');
+            if (nome) nome.value = data.nome || '';
+            if (unidade) unidade.value = data.unidade || 'litros';
+            if (conteudo) conteudo.value = data.conteudo != null ? data.conteudo : 1;
+            showToast('Dados preenchidos do catálogo!');
+        }
+    } catch (e) { console.warn('Catalogo lookup:', e.message); }
+}
+
 let scanStream = null;
 let scanRAF = null;
+let scanTargetInput = null;
 async function iniciarScan() {
     if (scanStatus) scanStatus.textContent = 'Iniciando câmera...';
     if (!('BarcodeDetector' in window)) {
@@ -420,9 +438,14 @@ async function iniciarScan() {
                     const codes = await detector.detect(scanVideo);
                     if (codes && codes.length) {
                         const val = codes[0].rawValue;
-                        if (codigoBarrasInput) codigoBarrasInput.value = val;
+                        const target = scanTargetInput || codigoBarrasInput;
+                        if (target) target.value = val;
                         if (scanStatus) scanStatus.textContent = 'Lido: ' + val;
-                        await preencherDoCatalogo(val);
+                        if (target && target.id === 'pb-codigo') {
+                            await preencherBaseDoCatalogo(val);
+                        } else {
+                            await preencherDoCatalogo(val);
+                        }
                         pararScan();
                         if (modalScan) modalScan.classList.remove('show');
                         return;
@@ -1410,7 +1433,9 @@ document.addEventListener('DOMContentLoaded', () => { try {
         codigoBarrasInput.addEventListener('change', () => preencherDoCatalogo(codigoBarrasInput.value));
         codigoBarrasInput.addEventListener('blur', () => preencherDoCatalogo(codigoBarrasInput.value));
     }
-    if (btnScan) btnScan.addEventListener('click', () => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    if (btnScan) btnScan.addEventListener('click', () => { scanTargetInput = codigoBarrasInput; if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    const btnScanBase = document.getElementById('btn-scan-base');
+    if (btnScanBase) btnScanBase.addEventListener('click', () => { scanTargetInput = document.getElementById('pb-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     if (btnFecharScan) btnFecharScan.addEventListener('click', () => { pararScan(); if (modalScan) modalScan.classList.remove('show'); });
 
 
