@@ -220,6 +220,8 @@ function aplicarPermissoes() {
     const fabCadastro = document.getElementById('fab-cadastrar');
     if (fabCadastro) fabCadastro.style.display = podeInserir() ? '' : 'none';
     if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
+    const menuProdutoBaseItem = document.getElementById('menu-produto-base-item');
+    if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = podeInserir() ? '' : 'none';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
@@ -1060,6 +1062,38 @@ async function deleteAviso(id) {
     }
 }
 
+async function saveProdutoBase(e) {
+    if (e) e.preventDefault();
+    if (!podeInserir()) { showToast('Sem permissão para cadastrar item base.'); return; }
+    const codigo = (document.getElementById('pb-codigo') || {}).value;
+    const nome = (document.getElementById('pb-nome') || {}).value;
+    const unidade = (document.getElementById('pb-unidade') || {}).value;
+    const conteudo = Number((document.getElementById('pb-conteudo') || {}).value);
+    if (!codigo || !codigo.trim() || !nome || !nome.trim() || !unidade || !Number.isFinite(conteudo) || conteudo <= 0) {
+        showToast('Preencha todos os campos corretamente.');
+        return;
+    }
+    if (!sbReady) { showToast('Supabase não conectado.'); return; }
+    try {
+        const { error } = await sb.from('produtos_base').upsert({
+            codigo_barras: codigo.trim(),
+            nome: nome.trim(),
+            unidade,
+            conteudo
+        });
+        if (error) throw error;
+        showToast('Item base salvo com sucesso!');
+        const form = document.getElementById('formProdutoBase');
+        if (form) form.reset();
+        const c = document.getElementById('pb-conteudo');
+        if (c) c.value = 1;
+        const m = document.getElementById('modal-produto-base');
+        if (m) m.classList.remove('show');
+    } catch (err) {
+        showToast('Erro ao salvar item base: ' + err.message);
+    }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
@@ -1184,9 +1218,11 @@ function renderStats() {
     produtos.forEach(p => p.lotes.forEach(l => {
         const qtd = parseInt(l.quantidade,10) || 0;
         if (qtd <= 0) return;
+        const d = diasRestantes(l.vencimento);
+        // Mantem os cards coerentes com a lista filtrada por prazo de alerta.
+        if (d > DIAS_ALERTA) return;
         tot++; estoque += qtd;
         if (l.em_promocao) promo++;
-        const d = diasRestantes(l.vencimento);
         if (d < 0) venc++; else { if (d <= DIAS_ALERTA) prox++; if (d <= 7) prox7++; if (d <= 15) prox15++; }
     }));
     statTotal.textContent = tot;
@@ -1249,6 +1285,14 @@ document.addEventListener('DOMContentLoaded', () => { try {
     });
 
     inputBusca.addEventListener('input', renderLista);
+
+    // Cadastrar item base
+    const menuProdutoBase = document.getElementById('menu-produto-base');
+    const modalProdutoBase = document.getElementById('modal-produto-base');
+    if (menuProdutoBase) menuProdutoBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalProdutoBase) modalProdutoBase.classList.add('show'); });
+    if (modalProdutoBase) modalProdutoBase.addEventListener('click', e => { if (e.target === modalProdutoBase) modalProdutoBase.classList.remove('show'); });
+    const formProdutoBase = document.getElementById('formProdutoBase');
+    if (formProdutoBase) formProdutoBase.addEventListener('submit', saveProdutoBase);
 
     // Avisos
     const menuAvisos = document.getElementById('menu-avisos');
