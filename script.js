@@ -11,6 +11,7 @@ let avisosCache = [];
 let avariasCache = [];
 let avariaAtual = null;
 let avariaItensCache = [];
+let avariaHistoryPushed = false;
 let sb = null;
 let sbReady = false;
 let sessao = null;      // { id, nome, login, cargo }
@@ -1188,8 +1189,7 @@ async function excluirAvaria(id) {
         if (error) throw error;
         if (avariaAtual && avariaAtual.id === id) {
             avariaAtual = null;
-            const m = document.getElementById('modal-avaria');
-            if (m) m.classList.remove('show');
+            fecharModalAvaria();
         }
         await loadAvarias();
         showToast('Avaria excluída.');
@@ -1250,6 +1250,18 @@ function abrirModalAvaria() {
     carregarItensAvaria();
     const qtd = document.getElementById('av-item-qtd');
     if (qtd) qtd.value = '';
+    if (!avariaHistoryPushed) {
+        try { history.pushState({ modal: 'avaria' }, ''); avariaHistoryPushed = true; } catch (e) {}
+    }
+}
+
+function fecharModalAvaria() {
+    const modal = document.getElementById('modal-avaria');
+    if (modal) modal.classList.remove('show');
+    if (avariaHistoryPushed) {
+        avariaHistoryPushed = false;
+        try { history.back(); } catch (e) {}
+    }
 }
 
 async function carregarItensAvaria() {
@@ -1561,6 +1573,14 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     inputBusca.addEventListener('input', renderLista);
 
+    window.addEventListener('popstate', () => {
+        if (avariaHistoryPushed) {
+            avariaHistoryPushed = false;
+            const m = document.getElementById('modal-avaria');
+            if (m) m.classList.remove('show');
+        }
+    });
+
     // Cadastrar item base
     const menuProdutoBase = document.getElementById('menu-produto-base');
     const modalProdutoBase = document.getElementById('modal-produto-base');
@@ -1632,7 +1652,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     // Avarias modal
     const modalAvaria = document.getElementById('modal-avaria');
-    if (modalAvaria) modalAvaria.addEventListener('click', e => { if (e.target === modalAvaria) modalAvaria.classList.remove('show'); });
+    if (modalAvaria) modalAvaria.addEventListener('click', e => { if (e.target === modalAvaria) fecharModalAvaria(); });
     const btnScanAvaria = document.getElementById('btn-scan-avaria');
     if (btnScanAvaria) btnScanAvaria.addEventListener('click', () => { scanTargetInput = document.getElementById('av-item-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     const avCodigo = document.getElementById('av-item-codigo');
