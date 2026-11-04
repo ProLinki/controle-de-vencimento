@@ -1271,8 +1271,11 @@ function abrirModalAvaria() {
     if (btnFecharAvaria) btnFecharAvaria.style.display = fechada ? 'none' : '';
     if (modal) modal.classList.add('show');
     carregarItensAvaria();
-    const qtd = document.getElementById('av-item-qtd');
-    if (qtd) qtd.value = '';
+    const codigo = document.getElementById('av-item-codigo'); if (codigo) codigo.value = '';
+    const nome = document.getElementById('av-item-nome'); if (nome) nome.value = '';
+    const unidade = document.getElementById('av-item-unidade'); if (unidade) unidade.value = 'litros';
+    const conteudo = document.getElementById('av-item-conteudo'); if (conteudo) conteudo.value = '';
+    const qtd = document.getElementById('av-item-qtd'); if (qtd) qtd.value = '';
 }
 
 function fecharModalAvaria() {
