@@ -212,6 +212,8 @@ async function sair() {
 
 function aplicarPermissoes() {
     const c = sessao.cargo;
+    const toolbarTitle = document.querySelector('.toolbar-title');
+    if (toolbarTitle) toolbarTitle.textContent = podeAvaria() ? 'Inventário de avarias' : 'Inventário';
     if (userChip) userChip.style.display = 'flex';
     if (userNome) userNome.textContent = sessao.nome;
     if (userCargo) { userCargo.textContent = labelCargo(c); userCargo.className = 'cargo-badge cargo-' + c; }
