@@ -101,7 +101,7 @@ function podeExcluirItem() { return !!sessao && sessao.cargo === 'admin'; }
 function podeGerirFuncionarios() { return !!sessao && sessao.cargo === 'admin'; }
 function podeConfigurarDias() { return !!sessao && sessao.cargo === 'admin'; }
 function podeGerirPromocoes() { return !!sessao && ['admin','gerente'].includes(sessao.cargo); }
-function podeAvaria() { return !!sessao && ['admin','avaria'].includes(sessao.cargo); }
+function podeAvaria() { return !!sessao && sessao.cargo === 'avaria'; }
 async function apiFuncionarios(method, payload) {
     const { data } = await sb.auth.getSession();
     const token = data.session && data.session.access_token;
