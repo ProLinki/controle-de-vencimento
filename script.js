@@ -8,6 +8,8 @@ const NOTIF_KEY = 'notificacao_diaria_mercadinho';
 let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY), 10) || 3;
 let produtos = [];
 let avisosCache = [];
+let avariasCache = [];
+let avariaAtual = null;
 let sb = null;
 let sbReady = false;
 let sessao = null;      // { id, nome, login, cargo }
@@ -90,7 +92,7 @@ function normNome(s) {
 }
 function esc(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
 function labelCargo(c) {
-    return c === 'admin' ? 'Administrador' : c === 'gerente' ? 'Gerente' : c === 'patrao' ? 'Patrao' : 'Funcionario';
+    return c === 'admin' ? 'Administrador' : c === 'gerente' ? 'Gerente' : c === 'patrao' ? 'Patrao' : c === 'avaria' ? 'Avaria' : 'Funcionario';
 }
 // ---------- PERMISSÕES ----------
 function podeInserir() { return !!sessao && ['admin','gerente','funcionario'].includes(sessao.cargo); }
@@ -99,6 +101,7 @@ function podeExcluirItem() { return !!sessao && sessao.cargo === 'admin'; }
 function podeGerirFuncionarios() { return !!sessao && sessao.cargo === 'admin'; }
 function podeConfigurarDias() { return !!sessao && sessao.cargo === 'admin'; }
 function podeGerirPromocoes() { return !!sessao && ['admin','gerente'].includes(sessao.cargo); }
+function podeAvaria() { return !!sessao && ['admin','avaria'].includes(sessao.cargo); }
 async function apiFuncionarios(method, payload) {
     const { data } = await sb.auth.getSession();
     const token = data.session && data.session.access_token;
@@ -224,6 +227,10 @@ function aplicarPermissoes() {
     if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
     const menuProdutoBaseItem = document.getElementById('menu-produto-base-item');
     if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = podeInserir() ? '' : 'none';
+    const menuAvariasItem = document.getElementById('menu-avarias-item');
+    if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
+    const fabAvaria = document.getElementById('fab-avaria');
+    if (fabAvaria) fabAvaria.style.display = podeAvaria() ? '' : 'none';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
@@ -445,6 +452,8 @@ async function iniciarScan() {
                         if (scanStatus) scanStatus.textContent = 'Lido: ' + val;
                         if (target && target.id === 'pb-codigo') {
                             await preencherBaseDoCatalogo(val);
+                        } else if (target && target.id === 'av-item-codigo') {
+                            await preencherAvariaDoCatalogo(val);
                         } else {
                             await preencherDoCatalogo(val);
                         }
@@ -880,6 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadConfig();
         await loadProdutos();
         await loadAvisos();
+        if (typeof podeAvaria === 'function' && podeAvaria()) await loadAvarias();
         if (typeof podeGerirFuncionarios === 'function' && podeGerirFuncionarios()) await loadFuncionarios();
         showToast('Dados atualizados.');
       } catch (err) {
@@ -1138,6 +1148,156 @@ function alertarCodigoBarrasInvalido(input) {
     return ok;
 }
 
+// ---------- AVARIAS ----------
+async function loadAvarias() {
+    if (!sbReady || !podeAvaria()) { avariasCache = []; renderAvarias(); return; }
+    try {
+        let q = sb.from('avarias').select('*').order('created_at', { ascending: false });
+        if (!['admin','gerente'].includes(sessao.cargo)) {
+            q = q.eq('criado_por_id', sessao.id);
+        }
+        const { data, error } = await q;
+        if (error) throw error;
+        avariasCache = data || [];
+    } catch (e) {
+        console.warn('Avarias:', e.message);
+        avariasCache = [];
+    }
+    renderAvarias();
+}
+
+function renderAvarias() {
+    const container = document.getElementById('avarias-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!podeAvaria() || avariasCache.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'flex';
+    avariasCache.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'aviso-card';
+        card.style.cursor = 'pointer';
+        card.innerHTML = '<div class="aviso-titulo">Avaria #' + String(a.id).slice(0,8) + '</div>' +
+            '<div class="aviso-msg">Data: ' + (a.data_abertura || '') + '</div>' +
+            '<div class="aviso-meta">' + esc(a.criado_por || '') + ' · ' + fmtDataHora(a.created_at) + '</div>';
+        card.addEventListener('click', () => abrirAvaria(a.id));
+        container.appendChild(card);
+    });
+}
+
+async function abrirNovaAvaria() {
+    if (!podeAvaria() || !sbReady) { showToast('Sem permissão ou conexão.'); return; }
+    try {
+        const { data, error } = await sb.from('avarias').insert({
+            data_abertura: new Date().toISOString().slice(0,10),
+            criado_por: sessao.nome,
+            criado_por_id: sessao.id
+        }).select('*').single();
+        if (error) throw error;
+        avariaAtual = data;
+        await loadAvarias();
+        abrirModalAvaria();
+    } catch (e) {
+        showToast('Erro ao abrir avaria: ' + e.message);
+    }
+}
+
+function abrirModalAvaria() {
+    const modal = document.getElementById('modal-avaria');
+    const info = document.getElementById('avaria-info');
+    if (info && avariaAtual) info.textContent = 'Avaria de ' + (avariaAtual.data_abertura || '') + ' — ' + (avariaAtual.criado_por || '');
+    if (modal) modal.classList.add('show');
+    carregarItensAvaria();
+    const qtd = document.getElementById('av-item-qtd');
+    if (qtd) qtd.value = '';
+}
+
+async function carregarItensAvaria() {
+    const lista = document.getElementById('avaria-itens-lista');
+    if (!lista || !avariaAtual) return;
+    lista.textContent = 'Carregando...';
+    try {
+        const { data, error } = await sb.from('avaria_itens').select('*').eq('avaria_id', avariaAtual.id).order('created_at', { ascending: true });
+        if (error) throw error;
+        lista.innerHTML = '';
+        if (!data || data.length === 0) { lista.textContent = 'Nenhum item adicionado.'; return; }
+        data.forEach(it => {
+            const row = document.createElement('div');
+            row.className = 'historico-row';
+            row.textContent = (it.nome || '') + ' · ' + it.quantidade + ' ' + (it.unidade || '') + (it.codigo_barras ? ' · Cód: ' + it.codigo_barras : '');
+            lista.appendChild(row);
+        });
+    } catch (e) {
+        lista.textContent = 'Erro: ' + e.message;
+    }
+}
+
+async function adicionarItemAvaria() {
+    if (!avariaAtual || !sbReady) { showToast('Abra uma avaria primeiro.'); return; }
+    const codigo = (document.getElementById('av-item-codigo') || {}).value;
+    const nome = (document.getElementById('av-item-nome') || {}).value;
+    const unidade = (document.getElementById('av-item-unidade') || {}).value;
+    const conteudo = Number((document.getElementById('av-item-conteudo') || {}).value);
+    const qtd = parseInt((document.getElementById('av-item-qtd') || {}).value, 10);
+    if (!nome || !nome.trim() || !qtd || qtd < 1) { showToast('Preencha nome e quantidade.'); return; }
+    try {
+        const { error } = await sb.from('avaria_itens').insert({
+            avaria_id: avariaAtual.id,
+            codigo_barras: (codigo || '').trim() || null,
+            nome: nome.trim(),
+            unidade,
+            conteudo: Number.isFinite(conteudo) ? conteudo : null,
+            quantidade: qtd
+        });
+        if (error) throw error;
+        // limpa campos
+        const c = document.getElementById('av-item-codigo'); if (c) c.value = '';
+        const n = document.getElementById('av-item-nome'); if (n) n.value = '';
+        const ct = document.getElementById('av-item-conteudo'); if (ct) ct.value = '';
+        const q = document.getElementById('av-item-qtd'); if (q) q.value = '';
+        await carregarItensAvaria();
+        showToast('Item adicionado à avaria.');
+    } catch (e) {
+        showToast('Erro ao adicionar item: ' + e.message);
+    }
+}
+
+async function preencherAvariaDoCatalogo(cb) {
+    cb = (cb || '').trim();
+    if (!cb || !sbReady) return;
+    try {
+        const { data } = await sb.from('produtos_base').select('*').eq('codigo_barras', cb).maybeSingle();
+        if (data) {
+            const nome = document.getElementById('av-item-nome');
+            const unidade = document.getElementById('av-item-unidade');
+            const conteudo = document.getElementById('av-item-conteudo');
+            if (nome) nome.value = data.nome || '';
+            if (unidade) unidade.value = data.unidade || 'litros';
+            if (conteudo) conteudo.value = data.conteudo != null ? data.conteudo : '';
+            showToast('Dados preenchidos do catálogo!');
+            return;
+        }
+        const { data: p } = await sb.from('produtos').select('nome, unidade, conteudo').eq('codigo_barras', cb).maybeSingle();
+        if (p) {
+            const nome = document.getElementById('av-item-nome');
+            const unidade = document.getElementById('av-item-unidade');
+            const conteudo = document.getElementById('av-item-conteudo');
+            if (nome) nome.value = p.nome || '';
+            if (unidade) unidade.value = p.unidade || 'litros';
+            if (conteudo) conteudo.value = p.conteudo != null ? p.conteudo : '';
+        }
+    } catch (e) { console.warn('Catalogo lookup:', e.message); }
+}
+
+async function abrirAvaria(id) {
+    const a = avariasCache.find(x => x.id === id);
+    if (!a) return;
+    avariaAtual = a;
+    abrirModalAvaria();
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
@@ -1286,6 +1446,7 @@ async function iniciarApp() {
     if (podeConfigurarDias()) salvarTzOffset();
     await loadProdutos();
     await loadAvisos();
+    if (podeAvaria()) await loadAvarias();
     if (podeGerirFuncionarios()) await loadFuncionarios();
     atualizarUINotificacao();
     if (notifDisponivel() && Notification.permission === 'granted') ativarPush();
@@ -1342,6 +1503,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Avisos
     const menuAvisos = document.getElementById('menu-avisos');
     if (menuAvisos) menuAvisos.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalAvisos) { modalAvisos.classList.add('show'); loadAvisos(); } });
+    const menuAvarias = document.getElementById('menu-avarias');
+    if (menuAvarias) menuAvarias.addEventListener('click', e => { e.preventDefault(); fecharMenu(); loadAvarias(); const c = document.getElementById('avarias-container'); if (c) c.scrollIntoView({ behavior: 'smooth' }); });
     const modalAvisos = document.getElementById('modal-avisos');
     if (modalAvisos) modalAvisos.addEventListener('click', e => { if (e.target === modalAvisos) modalAvisos.classList.remove('show'); });
     const btnSalvarAviso = document.getElementById('btn-salvar-aviso');
@@ -1395,6 +1558,21 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (fab) fab.addEventListener('click', () => { limparFormCadastro(); if (modalCadastro) modalCadastro.classList.add('show'); });
     const fabBase = document.getElementById('fab-produto-base');
     if (fabBase) fabBase.addEventListener('click', () => { const m = document.getElementById('modal-produto-base'); if (m) m.classList.add('show'); });
+    const fabAvaria = document.getElementById('fab-avaria');
+    if (fabAvaria) fabAvaria.addEventListener('click', () => { abrirNovaAvaria(); });
+
+    // Avarias modal
+    const modalAvaria = document.getElementById('modal-avaria');
+    if (modalAvaria) modalAvaria.addEventListener('click', e => { if (e.target === modalAvaria) modalAvaria.classList.remove('show'); });
+    const btnScanAvaria = document.getElementById('btn-scan-avaria');
+    if (btnScanAvaria) btnScanAvaria.addEventListener('click', () => { scanTargetInput = document.getElementById('av-item-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    const avCodigo = document.getElementById('av-item-codigo');
+    if (avCodigo) {
+        avCodigo.addEventListener('change', () => { preencherAvariaDoCatalogo(avCodigo.value); alertarCodigoBarrasInvalido(avCodigo); });
+        avCodigo.addEventListener('blur', () => { preencherAvariaDoCatalogo(avCodigo.value); alertarCodigoBarrasInvalido(avCodigo); });
+    }
+    const btnAddAvariaItem = document.getElementById('btn-add-avaria-item');
+    if (btnAddAvariaItem) btnAddAvariaItem.addEventListener('click', adicionarItemAvaria);
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });

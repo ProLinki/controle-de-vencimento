@@ -637,6 +637,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.ready { color:#f5c542; }
 
 .fab-base { left:24px; right:auto; background:#24221d; color:#f5c542; font-size:22px; }
+.fab-avaria { right:24px; bottom:90px; background:#24221d; color:#f5c542; font-size:22px; }
 
 .avisos-container { display:flex; flex-direction:column; gap:8px; }
 .aviso-card { background:#fff4d3; border:1px solid #f0d98d; border-radius:14px; padding:12px 14px; }
