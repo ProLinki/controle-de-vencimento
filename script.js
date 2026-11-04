@@ -10,6 +10,7 @@ let produtos = [];
 let avisosCache = [];
 let avariasCache = [];
 let avariaAtual = null;
+let avariaItensCache = [];
 let sb = null;
 let sbReady = false;
 let sessao = null;      // { id, nome, login, cargo }
@@ -231,6 +232,8 @@ function aplicarPermissoes() {
     if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
     const fabAvaria = document.getElementById('fab-avaria');
     if (fabAvaria) fabAvaria.style.display = podeAvaria() ? '' : 'none';
+    const statsEl = document.querySelector('.stats');
+    if (statsEl) statsEl.style.display = podeAvaria() ? 'none' : '';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
@@ -1221,16 +1224,47 @@ async function carregarItensAvaria() {
     try {
         const { data, error } = await sb.from('avaria_itens').select('*').eq('avaria_id', avariaAtual.id).order('created_at', { ascending: true });
         if (error) throw error;
+        avariaItensCache = data || [];
         lista.innerHTML = '';
-        if (!data || data.length === 0) { lista.textContent = 'Nenhum item adicionado.'; return; }
-        data.forEach(it => {
+        if (avariaItensCache.length === 0) { lista.textContent = 'Nenhum item adicionado.'; return; }
+        avariaItensCache.forEach(it => {
             const row = document.createElement('div');
             row.className = 'historico-row';
+            row.style.cursor = 'pointer';
+            row.dataset.id = it.id;
             row.textContent = (it.nome || '') + ' · ' + it.quantidade + ' ' + (it.unidade || '') + (it.codigo_barras ? ' · Cód: ' + it.codigo_barras : '');
+            row.addEventListener('click', () => mostrarOpcaoExcluirItem(it.id, row));
             lista.appendChild(row);
         });
     } catch (e) {
         lista.textContent = 'Erro: ' + e.message;
+    }
+}
+
+function mostrarOpcaoExcluirItem(id, row) {
+    // Remove botoes anteriores
+    document.querySelectorAll('.avaria-del-btn').forEach(b => b.remove());
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'avaria-del-btn btn-mini mini-excluir';
+    btn.textContent = 'Excluir item';
+    btn.style.marginTop = '6px';
+    btn.addEventListener('click', (ev) => { ev.stopPropagation(); excluirItemAvaria(id); });
+    row.appendChild(btn);
+    // Oculta apos alguns segundos
+    setTimeout(() => { if (btn.parentNode) btn.remove(); }, 4000);
+}
+
+async function excluirItemAvaria(id) {
+    if (!podeAvaria() || !sbReady) return;
+    if (!confirm('Excluir este item da avaria?')) return;
+    try {
+        const { error } = await sb.from('avaria_itens').delete().eq('id', id);
+        if (error) throw error;
+        await carregarItensAvaria();
+        showToast('Item excluído.');
+    } catch (e) {
+        showToast('Erro ao excluir item: ' + e.message);
     }
 }
 
