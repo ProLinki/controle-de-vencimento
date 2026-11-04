@@ -1737,7 +1737,12 @@ document.addEventListener('DOMContentLoaded', () => { try {
     const modalAvaria = document.getElementById('modal-avaria');
     if (modalAvaria) modalAvaria.addEventListener('click', e => { if (e.target === modalAvaria) fecharModalAvaria(); });
     const btnScanAvaria = document.getElementById('btn-scan-avaria');
-    if (btnScanAvaria) btnScanAvaria.addEventListener('click', () => { scanTargetInput = document.getElementById('av-item-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    if (btnScanAvaria) btnScanAvaria.addEventListener('click', () => {
+        pararScan();
+        scanTargetInput = document.getElementById('av-item-codigo');
+        if (modalScan) { modalScan.classList.remove('show'); }
+        setTimeout(() => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); }, 50);
+    });
     const avCodigo = document.getElementById('av-item-codigo');
     if (avCodigo) {
         avCodigo.addEventListener('change', () => { preencherAvariaDoCatalogo(avCodigo.value); alertarCodigoBarrasInvalido(avCodigo); });
@@ -1814,7 +1819,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         pbCodigo.addEventListener('change', () => alertarCodigoBarrasInvalido(pbCodigo));
         pbCodigo.addEventListener('blur', () => alertarCodigoBarrasInvalido(pbCodigo));
     }
-    if (btnScan) btnScan.addEventListener('click', () => { scanTargetInput = codigoBarrasInput; if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
+    if (btnScan) btnScan.addEventListener('click', () => { pararScan(); scanTargetInput = codigoBarrasInput; if (modalScan) modalScan.classList.remove('show'); setTimeout(() => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); }, 50); });
     const btnScanBase = document.getElementById('btn-scan-base');
     if (btnScanBase) btnScanBase.addEventListener('click', () => { scanTargetInput = document.getElementById('pb-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     if (btnFecharScan) btnFecharScan.addEventListener('click', () => { pararScan(); if (modalScan) modalScan.classList.remove('show'); });
