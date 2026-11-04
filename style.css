@@ -636,6 +636,8 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.show { transform:translate(-50%,0); opacity:1; }
 .pull-refresh.ready { color:#f5c542; }
 
+#modal-scan { z-index: 1600; }
+
 .fab-base { left:24px; right:auto; background:#24221d; color:#f5c542; font-size:22px; }
 .fab-avaria { right:24px; bottom:90px; background:#24221d; color:#f5c542; font-size:22px; }
 
