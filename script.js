@@ -219,6 +219,8 @@ function aplicarPermissoes() {
     }
     const fabCadastro = document.getElementById('fab-cadastrar');
     if (fabCadastro) fabCadastro.style.display = podeInserir() ? '' : 'none';
+    const fabProdutoBase = document.getElementById('fab-produto-base');
+    if (fabProdutoBase) fabProdutoBase.style.display = podeInserir() ? '' : 'none';
     if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
     const menuProdutoBaseItem = document.getElementById('menu-produto-base-item');
     if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = podeInserir() ? '' : 'none';
@@ -1096,6 +1098,10 @@ async function saveProdutoBase(e) {
         showToast('Preencha todos os campos corretamente.');
         return;
     }
+    if (!codigoBarrasPadraoValido(codigo)) {
+        showToast('Código de barras com quantidade de caracteres fora do padrão.');
+        return;
+    }
     if (!sbReady) { showToast('Supabase não conectado.'); return; }
     try {
         const { error } = await sb.from('produtos_base').upsert({
@@ -1115,6 +1121,21 @@ async function saveProdutoBase(e) {
     } catch (err) {
         showToast('Erro ao salvar item base: ' + err.message);
     }
+}
+
+function codigoBarrasPadraoValido(valor) {
+    const v = (valor || '').trim();
+    if (!v) return true;
+    return [6, 8, 12, 13, 14].includes(v.length);
+}
+
+function alertarCodigoBarrasInvalido(input) {
+    if (!input) return true;
+    const ok = codigoBarrasPadraoValido(input.value);
+    input.style.borderColor = ok ? '' : '#c43d35';
+    input.title = ok ? '' : 'Código de barras com quantidade de caracteres fora do padrão.';
+    if (!ok) showToast('Código de barras com quantidade de caracteres fora do padrão.');
+    return ok;
 }
 
 function renderLista() {
@@ -1302,6 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         const cb = document.getElementById('codigoBarras').value.trim();
         const venc = document.getElementById('vencimento').value;
         if (!nome || !qtd || !venc || !unidade || !Number.isFinite(conteudo) || conteudo <= 0) { showToast('Preencha todos os campos corretamente.'); return; }
+        if (cb && !codigoBarrasPadraoValido(cb)) { showToast('Código de barras com quantidade de caracteres fora do padrão.'); return; }
         await saveProduto(nome, unidade, conteudo, qtd, venc, cb);
         limparFormCadastro();
         if (modalCadastro) modalCadastro.classList.remove('show');
@@ -1371,6 +1393,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     const fab = document.getElementById('fab-cadastrar');
     if (fab) fab.addEventListener('click', () => { limparFormCadastro(); if (modalCadastro) modalCadastro.classList.add('show'); });
+    const fabBase = document.getElementById('fab-produto-base');
+    if (fabBase) fabBase.addEventListener('click', () => { const m = document.getElementById('modal-produto-base'); if (m) m.classList.add('show'); });
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });
@@ -1430,8 +1454,13 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     // Código de barras: lookup ao sair do campo
     if (codigoBarrasInput) {
-        codigoBarrasInput.addEventListener('change', () => preencherDoCatalogo(codigoBarrasInput.value));
-        codigoBarrasInput.addEventListener('blur', () => preencherDoCatalogo(codigoBarrasInput.value));
+        codigoBarrasInput.addEventListener('change', () => { preencherDoCatalogo(codigoBarrasInput.value); alertarCodigoBarrasInvalido(codigoBarrasInput); });
+        codigoBarrasInput.addEventListener('blur', () => { preencherDoCatalogo(codigoBarrasInput.value); alertarCodigoBarrasInvalido(codigoBarrasInput); });
+    }
+    const pbCodigo = document.getElementById('pb-codigo');
+    if (pbCodigo) {
+        pbCodigo.addEventListener('change', () => alertarCodigoBarrasInvalido(pbCodigo));
+        pbCodigo.addEventListener('blur', () => alertarCodigoBarrasInvalido(pbCodigo));
     }
     if (btnScan) btnScan.addEventListener('click', () => { scanTargetInput = codigoBarrasInput; if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     const btnScanBase = document.getElementById('btn-scan-base');
