@@ -231,6 +231,8 @@ function aplicarPermissoes() {
     if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
     const menuProdutoBaseItem = document.getElementById('menu-produto-base-item');
     if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = podeInserir() ? '' : 'none';
+    const menuBackupBaseItem = document.getElementById('menu-backup-base-item');
+    if (menuBackupBaseItem) menuBackupBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuAvariasItem = document.getElementById('menu-avarias-item');
     if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
     const fabAvaria = document.getElementById('fab-avaria');
@@ -1427,6 +1429,58 @@ async function abrirAvaria(id) {
     abrirModalAvaria();
 }
 
+// ---------- BACKUP PRODUTOS BASE ----------
+async function baixarBackupBase() {
+    if (!sbReady) { showToast('Supabase não conectado.'); return; }
+    try {
+        const { data, error } = await sb.from('produtos_base').select('codigo_barras,nome,unidade,conteudo').order('nome');
+        if (error) throw error;
+        const blob = new Blob([JSON.stringify(data || [], null, 2)], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup-produtos-base.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        const st = document.getElementById('backup-base-status');
+        if (st) st.textContent = 'Backup baixado: ' + (data || []).length + ' itens.';
+        showToast('Backup baixado com sucesso.');
+    } catch (e) {
+        showToast('Erro ao baixar backup: ' + e.message);
+    }
+}
+
+async function restaurarBackupBase() {
+    const input = document.getElementById('backup-base-file');
+    const st = document.getElementById('backup-base-status');
+    if (!input || !input.files || !input.files[0]) { showToast('Selecione um arquivo.'); return; }
+    if (!sbReady) { showToast('Supabase não conectado.'); return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+        try {
+            const parsed = JSON.parse(reader.result);
+            if (!Array.isArray(parsed)) throw new Error('Arquivo inválido.');
+            const rows = parsed.map(r => ({
+                codigo_barras: String(r.codigo_barras || '').trim(),
+                nome: String(r.nome || '').trim(),
+                unidade: r.unidade || 'litros',
+                conteudo: Number(r.conteudo) || 1
+            })).filter(r => r.codigo_barras && r.nome);
+            if (rows.length === 0) throw new Error('Nenhum item válido encontrado.');
+            const { error } = await sb.from('produtos_base').upsert(rows, { onConflict: 'codigo_barras' });
+            if (error) throw error;
+            if (st) st.textContent = 'Restaurados: ' + rows.length + ' itens.';
+            showToast('Backup restaurado: ' + rows.length + ' itens.');
+        } catch (e) {
+            if (st) st.textContent = 'Erro: ' + e.message;
+            showToast('Erro ao restaurar: ' + e.message);
+        }
+    };
+    reader.readAsText(input.files[0]);
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
@@ -1676,6 +1730,15 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Avisos
     const menuAvisos = document.getElementById('menu-avisos');
     if (menuAvisos) menuAvisos.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalAvisos) { modalAvisos.classList.add('show'); loadAvisos(); } });
+
+    const menuBackupBase = document.getElementById('menu-backup-base');
+    const modalBackupBase = document.getElementById('modal-backup-base');
+    if (menuBackupBase) menuBackupBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalBackupBase) modalBackupBase.classList.add('show'); });
+    if (modalBackupBase) modalBackupBase.addEventListener('click', e => { if (e.target === modalBackupBase) modalBackupBase.classList.remove('show'); });
+    const btnBaixarBackup = document.getElementById('btn-baixar-backup-base');
+    if (btnBaixarBackup) btnBaixarBackup.addEventListener('click', baixarBackupBase);
+    const btnRestaurarBackup = document.getElementById('btn-restaurar-backup-base');
+    if (btnRestaurarBackup) btnRestaurarBackup.addEventListener('click', restaurarBackupBase);
     const menuAvarias = document.getElementById('menu-avarias');
     if (menuAvarias) menuAvarias.addEventListener('click', e => { e.preventDefault(); fecharMenu(); loadAvarias(); const c = document.getElementById('avarias-container'); if (c) c.scrollIntoView({ behavior: 'smooth' }); });
     const modalAvisos = document.getElementById('modal-avisos');

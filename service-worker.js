@@ -1,4 +1,4 @@
-const CACHE = 'mercadinho-static-v100';
+const CACHE = 'mercadinho-static-v101';
 const STATIC_ASSETS = ['./', './index.html', './style.css', './script.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
