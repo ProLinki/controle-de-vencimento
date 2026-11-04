@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
       if (!nome || !/^[a-z0-9._-]{3,32}$/.test(login) || senha.length < 8) {
         return res.status(400).json({ error: 'Informe nome, login (3-32 caracteres: letras, numeros, ponto, _ ou -) e senha com pelo menos 8 caracteres.' });
       }
-      if (!['funcionario', 'gerente', 'patrao', 'admin'].includes(cargo)) return res.status(400).json({ error: 'Cargo invalido.' });
+      if (!['funcionario', 'gerente', 'patrao', 'admin', 'avaria'].includes(cargo)) return res.status(400).json({ error: 'Cargo invalido.' });
       const { data: created, error: createError } = await admin.auth.admin.createUser({
         email: emailFor(login), password: senha, email_confirm: true,
         user_metadata: { nome, login }
@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
         if (error) throw error;
         return res.status(200).json({ funcionario:data });
       }
-      if (!nome || !['funcionario', 'gerente', 'patrao', 'admin'].includes(cargo)) return res.status(400).json({ error: 'Nome ou cargo invalido.' });
+      if (!nome || !['funcionario', 'gerente', 'patrao', 'admin', 'avaria'].includes(cargo)) return res.status(400).json({ error: 'Nome ou cargo invalido.' });
       if (target.cargo === 'admin' && cargo !== 'admin') {
         const { count, error: countError } = await admin.from('funcionarios').select('id',{count:'exact',head:true}).eq('cargo','admin').eq('ativo',true);
         if (countError) throw countError;
