@@ -5,10 +5,13 @@ alter table public.funcionarios add constraint funcionarios_cargo_check check (c
 create table if not exists public.avarias (
   id uuid primary key default gen_random_uuid(),
   data_abertura date not null default current_date,
+  fechada boolean not null default false,
   criado_por text,
   criado_por_id uuid references public.funcionarios(id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+alter table public.avarias add column if not exists fechada boolean not null default false;
 
 create table if not exists public.avaria_itens (
   id uuid primary key default gen_random_uuid(),

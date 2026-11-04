@@ -1188,6 +1188,8 @@ async function loadAvarias() {
 }
 
 async function excluirAvaria(id) {
+    const a = avariasCache.find(x => x.id === id);
+    if (a && a.fechada) { showToast('Avaria fechada não pode ser excluída.'); return; }
     if (!podeAvaria() && sessao.cargo !== 'admin') return;
     if (!confirm('Excluir esta avaria e seus itens?')) return;
     try {
@@ -1217,10 +1219,10 @@ function renderAvarias() {
         const card = document.createElement('div');
         card.className = 'aviso-card';
         card.style.cursor = 'pointer';
-        card.innerHTML = '<div class="aviso-titulo">Avaria #' + String(a.id).slice(0,8) + '</div>' +
+        card.innerHTML = '<div class="aviso-titulo">Avaria #' + String(a.id).slice(0,8) + (a.fechada ? ' (FECHADA)' : ' (ABERTA)') + '</div>' +
             '<div class="aviso-msg">Data: ' + (a.data_abertura || '') + ' · Itens: ' + (a.itens_count || 0) + '</div>' +
             '<div class="aviso-meta">' + esc(a.criado_por || '') + ' · ' + fmtDataHora(a.created_at) + '</div>' +
-            '<button type="button" class="aviso-del" data-id="' + esc(a.id) + '">Excluir avaria</button>';
+            (a.fechada ? '' : '<button type="button" class="aviso-del" data-id="' + esc(a.id) + '">Excluir avaria</button>');
         card.addEventListener('click', (ev) => {
             if (ev.target && ev.target.classList.contains('aviso-del')) return;
             abrirAvaria(a.id);
@@ -1251,7 +1253,12 @@ async function abrirNovaAvaria() {
 function abrirModalAvaria() {
     const modal = document.getElementById('modal-avaria');
     const info = document.getElementById('avaria-info');
-    if (info && avariaAtual) info.textContent = 'Avaria de ' + (avariaAtual.data_abertura || '') + ' — ' + (avariaAtual.criado_por || '');
+    const fechada = !!(avariaAtual && avariaAtual.fechada);
+    if (info && avariaAtual) info.textContent = 'Avaria de ' + (avariaAtual.data_abertura || '') + ' — ' + (avariaAtual.criado_por || '') + (fechada ? ' (FECHADA)' : '');
+    const formBox = document.getElementById('avaria-form-box');
+    if (formBox) formBox.style.display = fechada ? 'none' : '';
+    const btnFecharAvaria = document.getElementById('btn-fechar-avaria');
+    if (btnFecharAvaria) btnFecharAvaria.style.display = fechada ? 'none' : '';
     if (modal) modal.classList.add('show');
     carregarItensAvaria();
     const qtd = document.getElementById('av-item-qtd');
@@ -1261,6 +1268,22 @@ function abrirModalAvaria() {
 function fecharModalAvaria() {
     const modal = document.getElementById('modal-avaria');
     if (modal) modal.classList.remove('show');
+}
+
+async function fecharAvaria() {
+    if (!avariaAtual || !sbReady) return;
+    if (avariaAtual.fechada) { showToast('Avaria já está fechada.'); return; }
+    if (!confirm('Fechar esta avaria? Após fechar, não será possível alterar itens.')) return;
+    try {
+        const { error } = await sb.from('avarias').update({ fechada: true }).eq('id', avariaAtual.id);
+        if (error) throw error;
+        avariaAtual.fechada = true;
+        await loadAvarias();
+        abrirModalAvaria();
+        showToast('Avaria fechada.');
+    } catch (e) {
+        showToast('Erro ao fechar avaria: ' + e.message);
+    }
 }
 
 async function carregarItensAvaria() {
@@ -1273,13 +1296,16 @@ async function carregarItensAvaria() {
         avariaItensCache = data || [];
         lista.innerHTML = '';
         if (avariaItensCache.length === 0) { lista.textContent = 'Nenhum item adicionado.'; return; }
+        const fechada = !!(avariaAtual && avariaAtual.fechada);
         avariaItensCache.forEach(it => {
             const row = document.createElement('div');
             row.className = 'historico-row';
-            row.style.cursor = 'pointer';
             row.dataset.id = it.id;
             row.textContent = (it.nome || '') + ' · ' + it.quantidade + ' ' + (it.unidade || '') + (it.codigo_barras ? ' · Cód: ' + it.codigo_barras : '');
-            row.addEventListener('click', () => mostrarOpcaoExcluirItem(it.id, row));
+            if (!fechada) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => mostrarOpcaoExcluirItem(it.id, row));
+            }
             lista.appendChild(row);
         });
     } catch (e) {
@@ -1288,6 +1314,7 @@ async function carregarItensAvaria() {
 }
 
 function mostrarOpcaoExcluirItem(id, row) {
+    if (avariaAtual && avariaAtual.fechada) return;
     // Remove botoes anteriores
     document.querySelectorAll('.avaria-del-btn').forEach(b => b.remove());
     const btn = document.createElement('button');
@@ -1302,6 +1329,7 @@ function mostrarOpcaoExcluirItem(id, row) {
 }
 
 async function excluirItemAvaria(id) {
+    if (avariaAtual && avariaAtual.fechada) { showToast('Avaria fechada. Não é possível excluir itens.'); return; }
     if (!podeAvaria() || !sbReady) return;
     if (!confirm('Excluir este item da avaria?')) return;
     try {
@@ -1321,6 +1349,7 @@ async function adicionarItemAvaria() {
     const unidade = (document.getElementById('av-item-unidade') || {}).value;
     const conteudo = Number((document.getElementById('av-item-conteudo') || {}).value);
     const qtd = parseInt((document.getElementById('av-item-qtd') || {}).value, 10);
+    if (avariaAtual && avariaAtual.fechada) { showToast('Avaria fechada. Não é possível adicionar itens.'); return; }
     if (!nome || !nome.trim() || !qtd || qtd < 1) { showToast('Preencha nome e quantidade.'); return; }
     try {
         const { error } = await sb.from('avaria_itens').insert({
@@ -1696,6 +1725,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     }
     const btnAddAvariaItem = document.getElementById('btn-add-avaria-item');
     if (btnAddAvariaItem) btnAddAvariaItem.addEventListener('click', adicionarItemAvaria);
+    const btnFecharAvaria = document.getElementById('btn-fechar-avaria');
+    if (btnFecharAvaria) btnFecharAvaria.addEventListener('click', fecharAvaria);
     let deferred = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; document.getElementById('install-bar').classList.add('show'); });
     document.getElementById('btnInstall').addEventListener('click', async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById('install-bar').classList.remove('show'); } });
