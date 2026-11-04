@@ -584,11 +584,12 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .produto-lista { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:10px; padding:2px 4px 84px 2px; scrollbar-color:rgba(80,72,50,.22) transparent; }
 .produto-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(50,43,25,.045); }
 .produto-card:hover { background:#fffefa; border-color:rgba(191,145,22,.42); }
-.produto-card .nome { color:#282720; font-size:1.04rem; }
-.produto-info { color:#84620a; }
-.produto-info span { background:#fbf2d8; color:#77580a; border:1px solid #f0e0ae; }
+.produto-card .nome { color:#282720; font-size:1.18rem; font-weight:800; }
+.produto-info { color:#84620a; font-size:.82rem; }
+.produto-info span { background:#fbf2d8; color:#77580a; border:1px solid #f0e0ae; font-size:.78rem; }
 .lote-item { background:#f8f5ed; border:1px solid rgba(60,52,32,.10); }
-.lote-qtd,.produto-card .dias { color:#282720; }
+.lote-qtd,.produto-card .dias { color:#282720; font-size:1rem; font-weight:700; }
+.produto-card .meta { font-size:.9rem; }
 .status-proximo { background:#fff4d3; color:#8b6509; border-color:#f0d98d; }
 .status-vencido { background:#fde8e5; color:#a52e27; border-color:#efc0bb; }
 .status-ok { background:#e7f3e9; color:#23683f; border-color:#c4dfca; }
