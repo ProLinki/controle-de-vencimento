@@ -241,6 +241,16 @@ function aplicarPermissoes() {
     if (toolbarSearch) toolbarSearch.style.display = podeAvaria() ? 'none' : '';
     const emptyState = document.getElementById('vazio');
     if (emptyState) emptyState.style.display = podeAvaria() ? 'none' : '';
+    const avisosContainer = document.getElementById('avisos-container');
+    if (avisosContainer) avisosContainer.style.display = podeAvaria() ? 'none' : '';
+    const produtoLista = document.getElementById('lista-produtos');
+    if (produtoLista) produtoLista.style.display = podeAvaria() ? 'none' : '';
+
+    // Drawer: remove abas desnecessarias para usuario avaria
+    const menuAlertaItem = document.getElementById('menu-alerta');
+    if (menuAlertaItem && menuAlertaItem.parentElement) menuAlertaItem.parentElement.style.display = podeAvaria() ? 'none' : '';
+    const menuHistoricoItem = document.getElementById('menu-historico');
+    if (menuHistoricoItem && menuHistoricoItem.parentElement) menuHistoricoItem.parentElement.style.display = podeAvaria() ? 'none' : '';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
