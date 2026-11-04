@@ -1740,8 +1740,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (btnScanAvaria) btnScanAvaria.addEventListener('click', () => {
         pararScan();
         scanTargetInput = document.getElementById('av-item-codigo');
-        if (modalScan) { modalScan.classList.remove('show'); }
-        setTimeout(() => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); }, 50);
+        if (modalScan && !modalScan.classList.contains('show')) modalScan.classList.add('show');
+        iniciarScan();
     });
     const avCodigo = document.getElementById('av-item-codigo');
     if (avCodigo) {
@@ -1819,7 +1819,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         pbCodigo.addEventListener('change', () => alertarCodigoBarrasInvalido(pbCodigo));
         pbCodigo.addEventListener('blur', () => alertarCodigoBarrasInvalido(pbCodigo));
     }
-    if (btnScan) btnScan.addEventListener('click', () => { pararScan(); scanTargetInput = codigoBarrasInput; if (modalScan) modalScan.classList.remove('show'); setTimeout(() => { if (modalScan) modalScan.classList.add('show'); iniciarScan(); }, 50); });
+    if (btnScan) btnScan.addEventListener('click', () => { pararScan(); scanTargetInput = codigoBarrasInput; if (modalScan && !modalScan.classList.contains('show')) modalScan.classList.add('show'); iniciarScan(); });
     const btnScanBase = document.getElementById('btn-scan-base');
     if (btnScanBase) btnScanBase.addEventListener('click', () => { scanTargetInput = document.getElementById('pb-codigo'); if (modalScan) modalScan.classList.add('show'); iniciarScan(); });
     if (btnFecharScan) btnFecharScan.addEventListener('click', () => { pararScan(); if (modalScan) modalScan.classList.remove('show'); });
