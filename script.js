@@ -1155,18 +1155,47 @@ function alertarCodigoBarrasInvalido(input) {
 async function loadAvarias() {
     if (!sbReady || !podeAvaria()) { avariasCache = []; renderAvarias(); return; }
     try {
-        let q = sb.from('avarias').select('*').order('created_at', { ascending: false });
-        if (!['admin','gerente'].includes(sessao.cargo)) {
+        let q = sb.from('avarias').select('*, avaria_itens(count)').order('created_at', { ascending: false });
+        if (sessao.cargo !== 'admin') {
             q = q.eq('criado_por_id', sessao.id);
         }
         const { data, error } = await q;
         if (error) throw error;
-        avariasCache = data || [];
+        avariasCache = (data || []).map(a => ({
+            ...a,
+            itens_count: (Array.isArray(a.avaria_itens) && a.avaria_itens[0] && a.avaria_itens[0].count) || 0
+        }));
     } catch (e) {
         console.warn('Avarias:', e.message);
-        avariasCache = [];
+        // fallback sem contagem
+        try {
+            let q2 = sb.from('avarias').select('*').order('created_at', { ascending: false });
+            if (sessao.cargo !== 'admin') q2 = q2.eq('criado_por_id', sessao.id);
+            const { data } = await q2;
+            avariasCache = (data || []).map(a => ({ ...a, itens_count: 0 }));
+        } catch (e2) {
+            avariasCache = [];
+        }
     }
     renderAvarias();
+}
+
+async function excluirAvaria(id) {
+    if (!podeAvaria() && sessao.cargo !== 'admin') return;
+    if (!confirm('Excluir esta avaria e seus itens?')) return;
+    try {
+        const { error } = await sb.from('avarias').delete().eq('id', id);
+        if (error) throw error;
+        if (avariaAtual && avariaAtual.id === id) {
+            avariaAtual = null;
+            const m = document.getElementById('modal-avaria');
+            if (m) m.classList.remove('show');
+        }
+        await loadAvarias();
+        showToast('Avaria excluída.');
+    } catch (e) {
+        showToast('Erro ao excluir avaria: ' + e.message);
+    }
 }
 
 function renderAvarias() {
@@ -1183,9 +1212,15 @@ function renderAvarias() {
         card.className = 'aviso-card';
         card.style.cursor = 'pointer';
         card.innerHTML = '<div class="aviso-titulo">Avaria #' + String(a.id).slice(0,8) + '</div>' +
-            '<div class="aviso-msg">Data: ' + (a.data_abertura || '') + '</div>' +
-            '<div class="aviso-meta">' + esc(a.criado_por || '') + ' · ' + fmtDataHora(a.created_at) + '</div>';
-        card.addEventListener('click', () => abrirAvaria(a.id));
+            '<div class="aviso-msg">Data: ' + (a.data_abertura || '') + ' · Itens: ' + (a.itens_count || 0) + '</div>' +
+            '<div class="aviso-meta">' + esc(a.criado_por || '') + ' · ' + fmtDataHora(a.created_at) + '</div>' +
+            '<button type="button" class="aviso-del" data-id="' + esc(a.id) + '">Excluir avaria</button>';
+        card.addEventListener('click', (ev) => {
+            if (ev.target && ev.target.classList.contains('aviso-del')) return;
+            abrirAvaria(a.id);
+        });
+        const del = card.querySelector('.aviso-del');
+        if (del) del.addEventListener('click', (ev) => { ev.stopPropagation(); excluirAvaria(a.id); });
         container.appendChild(card);
     });
 }

@@ -39,7 +39,7 @@ create policy avarias_insert on public.avarias for insert to authenticated
 with check (public.meu_cargo() in ('admin','avaria'));
 
 create policy avarias_delete on public.avarias for delete to authenticated
-using (public.meu_cargo() = 'admin');
+using (public.meu_cargo() = 'admin' or (public.meu_cargo() = 'avaria' and criado_por_id = public.meu_funcionario_id()));
 
 create policy avaria_itens_select on public.avaria_itens for select to authenticated
 using (public.meu_funcionario_id() is not null);
