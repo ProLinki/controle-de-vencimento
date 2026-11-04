@@ -1254,18 +1254,11 @@ function abrirModalAvaria() {
     carregarItensAvaria();
     const qtd = document.getElementById('av-item-qtd');
     if (qtd) qtd.value = '';
-    if (!avariaHistoryPushed) {
-        try { history.pushState({ modal: 'avaria' }, ''); avariaHistoryPushed = true; } catch (e) {}
-    }
 }
 
 function fecharModalAvaria() {
     const modal = document.getElementById('modal-avaria');
     if (modal) modal.classList.remove('show');
-    if (avariaHistoryPushed) {
-        avariaHistoryPushed = false;
-        try { history.back(); } catch (e) {}
-    }
 }
 
 async function carregarItensAvaria() {
@@ -1577,13 +1570,48 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     inputBusca.addEventListener('input', renderLista);
 
-    window.addEventListener('popstate', () => {
-        if (avariaHistoryPushed) {
-            avariaHistoryPushed = false;
-            const m = document.getElementById('modal-avaria');
-            if (m) m.classList.remove('show');
-        }
-    });
+    // Gerenciamento generico do botao Voltar do mobile para modais
+    (function setupModalHistory() {
+        const modalStack = [];
+        let closingFromBack = false;
+        let cleaningHistory = false;
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(m => {
+                if (m.attributeName !== 'class') return;
+                const el = m.target;
+                if (!el || !el.classList || !el.classList.contains('modal-overlay')) return;
+                const nowShown = el.classList.contains('show');
+                const wasShown = m.oldValue ? m.oldValue.split(' ').includes('show') : false;
+                if (nowShown && !wasShown) {
+                    if (!closingFromBack && !modalStack.includes(el.id)) {
+                        modalStack.push(el.id);
+                        try { history.pushState({ modal: el.id }, ''); } catch (e) {}
+                    }
+                } else if (!nowShown && wasShown) {
+                    const idx = modalStack.lastIndexOf(el.id);
+                    if (idx !== -1) modalStack.splice(idx, 1);
+                    if (!closingFromBack && !cleaningHistory) {
+                        cleaningHistory = true;
+                        try { history.back(); } catch (e) {}
+                        setTimeout(() => { cleaningHistory = false; }, 0);
+                    }
+                }
+            });
+        });
+        document.querySelectorAll('.modal-overlay').forEach(el => {
+            observer.observe(el, { attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
+        });
+        window.addEventListener('popstate', () => {
+            if (cleaningHistory) { cleaningHistory = false; return; }
+            if (modalStack.length > 0) {
+                closingFromBack = true;
+                const id = modalStack.pop();
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('show');
+                closingFromBack = false;
+            }
+        });
+    })();
 
     // Cadastrar item base
     const menuProdutoBase = document.getElementById('menu-produto-base');
