@@ -557,7 +557,7 @@ body {
 }
 body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8e1d5 100%); color:var(--text-main); }
 .app-toolbar { background:#211f1b; border-bottom:1px solid rgba(255,255,255,.08); box-shadow:0 5px 18px rgba(0,0,0,.12); }
-.toolbar-container { max-width:1240px; margin:auto; padding:16px 28px; display:flex; align-items:center; gap:12px; }
+.toolbar-container { max-width:1240px; margin:auto; padding:16px 28px; display:flex; align-items:center; justify-content:flex-start; gap:12px; }
 .toolbar-title { color:#f5c542; text-align:left; font-size:1.1rem; flex:0 0 auto; }
 .btn-menu span { background:#fffdf8; }
 .toolbar-search { flex:1 1 260px; max-width:420px; min-width:120px; }
