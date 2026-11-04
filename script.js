@@ -235,6 +235,10 @@ function aplicarPermissoes() {
     if (fabAvaria) fabAvaria.style.display = podeAvaria() ? '' : 'none';
     const statsEl = document.querySelector('.stats');
     if (statsEl) statsEl.style.display = podeAvaria() ? 'none' : '';
+    const toolbarSearch = document.querySelector('.toolbar-search');
+    if (toolbarSearch) toolbarSearch.style.display = podeAvaria() ? 'none' : '';
+    const emptyState = document.getElementById('vazio');
+    if (emptyState) emptyState.style.display = podeAvaria() ? 'none' : '';
     if (diasAlertaInput) {
         diasAlertaInput.disabled = !podeConfigurarDias();
         if (!podeConfigurarDias()) diasAlertaInput.readOnly = true;
