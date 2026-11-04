@@ -1650,6 +1650,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
             });
         });
         document.querySelectorAll('.modal-overlay').forEach(el => {
+            if (el.id === 'modal-scan') return; // scanner nao participa do historico
             observer.observe(el, { attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
         });
         window.addEventListener('popstate', () => {
