@@ -1275,10 +1275,13 @@ async function fecharAvaria() {
     if (avariaAtual.fechada) { showToast('Avaria já está fechada.'); return; }
     if (!confirm('Fechar esta avaria? Após fechar, não será possível alterar itens.')) return;
     try {
-        const { error } = await sb.from('avarias').update({ fechada: true }).eq('id', avariaAtual.id);
+        const { data, error } = await sb.from('avarias').update({ fechada: true }).eq('id', avariaAtual.id).select('*').single();
         if (error) throw error;
-        avariaAtual.fechada = true;
+        if (data) avariaAtual = data;
+        else avariaAtual.fechada = true;
         await loadAvarias();
+        const updated = avariasCache.find(a => a.id === avariaAtual.id);
+        if (updated) avariaAtual = updated;
         abrirModalAvaria();
         showToast('Avaria fechada.');
     } catch (e) {

@@ -41,6 +41,10 @@ using (public.meu_funcionario_id() is not null);
 create policy avarias_insert on public.avarias for insert to authenticated
 with check (public.meu_cargo() in ('admin','avaria'));
 
+create policy avarias_update on public.avarias for update to authenticated
+using (public.meu_cargo() = 'admin' or (public.meu_cargo() = 'avaria' and criado_por_id = public.meu_funcionario_id()))
+with check (public.meu_cargo() = 'admin' or (public.meu_cargo() = 'avaria' and criado_por_id = public.meu_funcionario_id()));
+
 create policy avarias_delete on public.avarias for delete to authenticated
 using (public.meu_cargo() = 'admin' or (public.meu_cargo() = 'avaria' and criado_por_id = public.meu_funcionario_id()));
 
