@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=78">
+  <link rel="stylesheet" href="style.css?v=79">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -127,8 +127,8 @@
     <p class="modal-sub">O mesmo produto pode ter vários lotes com datas diferentes.</p>
     <form id="formProduto">
       <div class="input-group"><label>Nome do produto</label><input type="text" id="nome" class="input-field" placeholder="Ex: Leite Integral" required></div>
-      <div class="input-group"><label>Unidade</label><select id="unidade" class="input-field" required><option value="litros">Litros</option><option value="gramas">Gramas</option><option value="caixa">Caixa (unidade)</option></select></div>
-      <div class="input-group"><label>Conteudo da embalagem (ex.: 2 litros ou 500 gramas)</label><input type="number" id="conteudo" min="0.001" step="0.001" value="1" required></div>
+      <div class="input-group"><label>Unidade</label><select id="unidade" class="input-field" required><option value="litros">Litros</option><option value="ml">Mililitros</option><option value="gramas">Gramas</option><option value="caixa">Caixa (unidade)</option></select></div>
+      <div class="input-group"><label>Conteudo da embalagem (ex.: 2 litros ou 500 gramas)</label><input type="number" id="conteudo" min="0.001" step="0.001" required></div>
       <div class="input-group"><label>Quantidade deste lote</label><input type="number" id="quantidade" min="1" value="1" required></div>
       <div class="input-group">
         <label>Código de barras</label>
@@ -156,8 +156,8 @@
         </div>
       </div>
       <div class="input-group"><label>Nome do produto</label><input type="text" id="pb-nome" class="input-field" placeholder="Ex: Leite Integral" required></div>
-      <div class="input-group"><label>Unidade</label><select id="pb-unidade" class="input-field" required><option value="litros">Litros</option><option value="gramas">Gramas</option><option value="caixa">Caixa (unidade)</option></select></div>
-      <div class="input-group"><label>Conteúdo da embalagem</label><input type="number" id="pb-conteudo" min="0.001" step="0.001" value="1" required></div>
+      <div class="input-group"><label>Unidade</label><select id="pb-unidade" class="input-field" required><option value="litros">Litros</option><option value="ml">Mililitros</option><option value="gramas">Gramas</option><option value="caixa">Caixa (unidade)</option></select></div>
+      <div class="input-group"><label>Conteúdo da embalagem</label><input type="number" id="pb-conteudo" min="0.001" step="0.001" required></div>
       <div class="modal-acoes"><button type="submit" class="btn btn-success">Salvar item base</button><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-produto-base').classList.remove('show')">Cancelar</button></div>
     </form>
   </div>
@@ -246,7 +246,7 @@
 <div id="install-bar" class="install-bar"><span>Instalar como aplicativo?</span><button id="btnInstall" class="btn btn-success">Instalar</button><button id="btnCloseInstall" class="btn btn-outline">✖</button></div>
 <div id="toast" class="toast"></div>
 
-<script src="script.js?v=72"></script>
+<script src="script.js?v=73"></script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js?v=60').then(reg=>console.log('SW ok',reg.scope)).catch(err=>console.log('Erro SW',err));}</script>
 </body>
 </html>

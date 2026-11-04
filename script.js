@@ -385,7 +385,7 @@ async function preencherDoCatalogo(cb) {
         if (data) {
             document.getElementById('nome').value = data.nome || '';
             if (unidadeInput) unidadeInput.value = data.unidade || 'litros';
-            if (conteudoInput) conteudoInput.value = data.conteudo != null ? data.conteudo : 1;
+            if (conteudoInput) conteudoInput.value = data.conteudo != null ? data.conteudo : '';
             showToast('Dados preenchidos do catálogo!');
             return;
         }
@@ -393,7 +393,7 @@ async function preencherDoCatalogo(cb) {
         if (p) {
             document.getElementById('nome').value = p.nome || '';
             if (unidadeInput) unidadeInput.value = p.unidade || 'litros';
-            if (conteudoInput) conteudoInput.value = p.conteudo != null ? p.conteudo : 1;
+            if (conteudoInput) conteudoInput.value = p.conteudo != null ? p.conteudo : '';
         }
     } catch (e) { console.warn('Catalogo lookup:', e.message); }
 }
@@ -409,7 +409,7 @@ async function preencherBaseDoCatalogo(cb) {
             const conteudo = document.getElementById('pb-conteudo');
             if (nome) nome.value = data.nome || '';
             if (unidade) unidade.value = data.unidade || 'litros';
-            if (conteudo) conteudo.value = data.conteudo != null ? data.conteudo : 1;
+            if (conteudo) conteudo.value = data.conteudo != null ? data.conteudo : '';
             showToast('Dados preenchidos do catálogo!');
         }
     } catch (e) { console.warn('Catalogo lookup:', e.message); }
@@ -564,7 +564,7 @@ function limparFormCadastro() {
     const nm = document.getElementById('nome');
     if (q) q.value = 1;
     if (u) u.value = 'litros';
-    if (c) c.value = 1;
+    if (c) c.value = '';
     if (vc) vc.value = new Date().toISOString().split('T')[0];
     if (cb) cb.value = '';
     if (nm) nm.value = '';
@@ -1115,7 +1115,7 @@ async function saveProdutoBase(e) {
         const form = document.getElementById('formProdutoBase');
         if (form) form.reset();
         const c = document.getElementById('pb-conteudo');
-        if (c) c.value = 1;
+        if (c) c.value = '';
         const m = document.getElementById('modal-produto-base');
         if (m) m.classList.remove('show');
     } catch (err) {
