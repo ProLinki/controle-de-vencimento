@@ -1312,9 +1312,13 @@ async function carregarItensAvaria() {
         const fechada = !!(avariaAtual && avariaAtual.fechada);
         avariaItensCache.forEach(it => {
             const row = document.createElement('div');
-            row.className = 'historico-row';
+            row.className = 'avaria-item-card';
             row.dataset.id = it.id;
-            row.textContent = (it.nome || '') + ' · ' + it.quantidade + ' ' + (it.unidade || '') + (it.codigo_barras ? ' · Cód: ' + it.codigo_barras : '');
+            row.innerHTML =
+                '<div class="avaria-item-nome">' + esc(it.nome || '') + '</div>' +
+                '<div class="avaria-item-linha">Tipo: ' + esc(it.unidade || '—') + '</div>' +
+                (it.codigo_barras ? '<div class="avaria-item-linha">Código de barras: ' + esc(it.codigo_barras) + '</div>' : '') +
+                '<div class="avaria-item-qtd">Quantidade avariada: ' + (parseInt(it.quantidade,10)||0) + '</div>';
             if (!fechada) {
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', () => mostrarOpcaoExcluirItem(it.id, row));
