@@ -227,10 +227,10 @@ function aplicarPermissoes() {
     const fabCadastro = document.getElementById('fab-cadastrar');
     if (fabCadastro) fabCadastro.style.display = podeInserir() ? '' : 'none';
     const fabProdutoBase = document.getElementById('fab-produto-base');
-    if (fabProdutoBase) fabProdutoBase.style.display = podeInserir() ? '' : 'none';
+    if (fabProdutoBase) fabProdutoBase.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     if (menuCadastro && menuCadastro.parentElement) menuCadastro.parentElement.style.display = podeInserir() ? '' : 'none';
     const menuProdutoBaseItem = document.getElementById('menu-produto-base-item');
-    if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = podeInserir() ? '' : 'none';
+    if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuBackupBaseItem = document.getElementById('menu-backup-base-item');
     if (menuBackupBaseItem) menuBackupBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuAvariasItem = document.getElementById('menu-avarias-item');
@@ -1121,7 +1121,7 @@ async function deleteAviso(id) {
 
 async function saveProdutoBase(e) {
     if (e) e.preventDefault();
-    if (!podeInserir()) { showToast('Sem permissão para cadastrar item base.'); return; }
+    if (!sessao || sessao.cargo !== 'admin') { showToast('Somente administrador cadastra item base.'); return; }
     const codigo = (document.getElementById('pb-codigo') || {}).value;
     const nome = (document.getElementById('pb-nome') || {}).value;
     const unidade = (document.getElementById('pb-unidade') || {}).value;
