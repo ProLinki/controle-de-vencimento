@@ -17,12 +17,15 @@ create table if not exists public.avaria_itens (
   id uuid primary key default gen_random_uuid(),
   avaria_id uuid not null references public.avarias(id) on delete cascade,
   codigo_barras text,
+  sku text,
   nome text not null,
   unidade text,
   conteudo numeric,
   quantidade integer not null check (quantidade > 0),
   created_at timestamptz not null default now()
 );
+
+alter table public.avaria_itens add column if not exists sku text;
 
 alter table public.avarias enable row level security;
 alter table public.avaria_itens enable row level security;

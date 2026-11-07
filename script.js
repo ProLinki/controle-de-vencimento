@@ -1274,6 +1274,7 @@ function abrirModalAvaria() {
     if (modal) modal.classList.add('show');
     carregarItensAvaria();
     const codigo = document.getElementById('av-item-codigo'); if (codigo) codigo.value = '';
+    const sku = document.getElementById('av-item-sku'); if (sku) sku.value = '';
     const nome = document.getElementById('av-item-nome'); if (nome) nome.value = '';
     const unidade = document.getElementById('av-item-unidade'); if (unidade) unidade.value = 'litros';
     const conteudo = document.getElementById('av-item-conteudo'); if (conteudo) conteudo.value = '';
@@ -1323,6 +1324,7 @@ async function carregarItensAvaria() {
                 '<div class="avaria-item-nome">' + esc(it.nome || '') + '</div>' +
                 '<div class="avaria-item-linha">Tipo: ' + esc(it.unidade || '—') + '</div>' +
                 (it.codigo_barras ? '<div class="avaria-item-linha">Código de barras: ' + esc(it.codigo_barras) + '</div>' : '') +
+                (it.sku ? '<div class="avaria-item-linha">SKU: ' + esc(it.sku) + '</div>' : '') +
                 '<div class="avaria-item-qtd">Quantidade avariada: ' + (parseInt(it.quantidade,10)||0) + '</div>';
             if (!fechada) {
                 row.style.cursor = 'pointer';
@@ -1394,6 +1396,7 @@ async function excluirItemAvaria(id) {
 async function adicionarItemAvaria() {
     if (!avariaAtual || !sbReady) { showToast('Abra uma avaria primeiro.'); return; }
     const codigo = (document.getElementById('av-item-codigo') || {}).value;
+    const sku = (document.getElementById('av-item-sku') || {}).value;
     const nome = (document.getElementById('av-item-nome') || {}).value;
     const unidade = (document.getElementById('av-item-unidade') || {}).value;
     const conteudo = Number((document.getElementById('av-item-conteudo') || {}).value);
@@ -1404,6 +1407,7 @@ async function adicionarItemAvaria() {
         const { error } = await sb.from('avaria_itens').insert({
             avaria_id: avariaAtual.id,
             codigo_barras: (codigo || '').trim() || null,
+            sku: (sku || '').trim() || null,
             nome: nome.trim(),
             unidade,
             conteudo: Number.isFinite(conteudo) ? conteudo : null,
@@ -1412,6 +1416,7 @@ async function adicionarItemAvaria() {
         if (error) throw error;
         // limpa campos
         const c = document.getElementById('av-item-codigo'); if (c) c.value = '';
+        const s = document.getElementById('av-item-sku'); if (s) s.value = '';
         const n = document.getElementById('av-item-nome'); if (n) n.value = '';
         const ct = document.getElementById('av-item-conteudo'); if (ct) ct.value = '';
         const q = document.getElementById('av-item-qtd'); if (q) q.value = '';
