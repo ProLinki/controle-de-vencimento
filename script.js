@@ -1326,13 +1326,40 @@ async function carregarItensAvaria() {
                 '<div class="avaria-item-qtd">Quantidade avariada: ' + (parseInt(it.quantidade,10)||0) + '</div>';
             if (!fechada) {
                 row.style.cursor = 'pointer';
-                row.addEventListener('click', () => mostrarOpcaoExcluirItem(it.id, row));
+                row.addEventListener('click', () => { mostrarCodigoBarras(it.codigo_barras); mostrarOpcaoExcluirItem(it.id, row); });
+            } else {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => mostrarCodigoBarras(it.codigo_barras));
             }
             lista.appendChild(row);
         });
     } catch (e) {
         lista.textContent = 'Erro: ' + e.message;
     }
+}
+
+function mostrarCodigoBarras(codigo) {
+    const modal = document.getElementById('modal-barcode');
+    const val = document.getElementById('barcode-value');
+    const svg = document.getElementById('barcode-svg');
+    if (!modal || !svg) return;
+    const code = (codigo || '').trim();
+    if (!code) { showToast('Item sem código de barras.'); return; }
+    if (val) val.textContent = code;
+    try {
+        if (typeof JsBarcode !== 'undefined') {
+            let format = 'CODE128';
+            if (/^\d{13}$/.test(code)) format = 'EAN13';
+            else if (/^\d{12}$/.test(code)) format = 'UPC';
+            else if (/^\d{8}$/.test(code)) format = 'EAN8';
+            JsBarcode(svg, code, { format, width: 2, height: 80, displayValue: true, margin: 10 });
+        } else {
+            svg.textContent = code;
+        }
+    } catch (e) {
+        svg.textContent = code;
+    }
+    modal.classList.add('show');
 }
 
 function mostrarOpcaoExcluirItem(id, row) {
@@ -1484,7 +1511,9 @@ async function restaurarBackupBase() {
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
-        if (termo && !normNome(p.nome).includes(termo)) return false;
+        const barcodeMatch = (p.codigoBarras || '').toLowerCase().includes(termo) ||
+            p.lotes.some(l => (l.codigoBarras || '').toLowerCase().includes(termo));
+        if (termo && !normNome(p.nome).includes(termo) && !barcodeMatch) return false;
         const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade, 10) || 0) > 0);
         if (lotesAtivos.length === 0) return false;
         // A lista passa a respeitar o prazo de alerta configurado (dias).
@@ -1516,6 +1545,7 @@ function renderLista() {
             '<div class="nome">' + esc(p.nome) + '</div>' +
             '<div class="produto-info">' +
             '<span>Total: ' + totalQtd + ' un</span>' +
+            (p.codigoBarras ? '<span>Cód: ' + esc(p.codigoBarras) + '</span>' : '') +
             (p.unidade ? '<span>Conteudo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) + '</span>' : '') +
             '</div>' +
             '<div class="resumo-dias">' +
