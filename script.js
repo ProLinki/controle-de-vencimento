@@ -998,12 +998,27 @@ async function alternarPromocao(lote) {
     } catch (e) { showToast('Erro ao atualizar destaque: ' + e.message); }
 }
 
+async function limparHistorico() {
+    if (!sessao || sessao.cargo !== 'admin') { showToast('Somente administrador.'); return; }
+    if (!confirm('Excluir todo o histórico de movimentações e auditoria? Esta ação não pode ser desfeita.')) return;
+    try {
+        await sb.from('movimentacoes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await sb.from('auditoria').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        showToast('Histórico limpo.');
+        abrirHistorico();
+    } catch (e) {
+        showToast('Erro ao limpar histórico: ' + e.message);
+    }
+}
+
 async function abrirHistorico() {
     const modal = document.getElementById('modal-historico');
     const area = document.getElementById('historico-conteudo');
     const resumo = document.getElementById('relatorio-resumo');
     if (!modal || !area) return;
     area.textContent = 'Carregando historico...'; if (resumo) resumo.textContent='Carregando indicadores...'; modal.classList.add('show');
+    const btnLimpar = document.getElementById('btn-limpar-historico');
+    if (btnLimpar) btnLimpar.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     try {
         const [{ data, error }, { data: logs, error: auditError }, { data: totals, error: totalsError }] = await Promise.all([
           sb.from('movimentacoes').select('tipo,quantidade,observacao,funcionario_nome,created_at,produtos(nome)').order('created_at',{ascending:false}).limit(100),
@@ -1906,6 +1921,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (menuHistorico) menuHistorico.addEventListener('click', e => { e.preventDefault(); fecharMenu(); abrirHistorico(); });
     const btnExportarRelatorio = document.getElementById('btn-exportar-relatorio');
     if (btnExportarRelatorio) btnExportarRelatorio.addEventListener('click', exportarRelatorio);
+    const btnLimparHistorico = document.getElementById('btn-limpar-historico');
+    if (btnLimparHistorico) btnLimparHistorico.addEventListener('click', limparHistorico);
     if (menuSair) menuSair.addEventListener('click', e => { e.preventDefault(); fecharMenu(); sair(); });
 
     // Código de barras: lookup ao sair do campo
