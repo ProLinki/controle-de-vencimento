@@ -337,6 +337,7 @@ async function loadProdutos() {
         // Nao removemos cadastros automaticamente: exclusoes exigem acao autorizada.
     } catch (e) {
         showToast('Erro carregar: ' + e.message);
+        produtos = [];
     }
     console.log('loadProdutos DIAS_ALERTA=', DIAS_ALERTA, 'produtos=', produtos.length);
     window.DIAS_ALERTA = DIAS_ALERTA;
@@ -580,6 +581,8 @@ function abrirModal(loteId, produtoId) {
     modalProduto.textContent = prod.nome + ' — vence ' + fmtBR(lote.vencimento);
     editQtd.value = lote.quantidade;
     editVenc.value = lote.vencimento;
+    const editVR = document.getElementById('edit-vencimento-rapido');
+    if (editVR) editVR.value = '';
     modalOverlay.classList.add('show');
     editQtd.focus();
 }
@@ -597,6 +600,8 @@ function limparFormCadastro() {
     if (u) u.value = 'litros';
     if (c) c.value = '';
     if (vc) vc.value = new Date().toISOString().split('T')[0];
+    const vr = document.getElementById('vencimento-rapido');
+    if (vr) vr.value = '';
     if (cb) cb.value = '';
     if (nm) nm.value = '';
 }
@@ -872,7 +877,7 @@ async function enviarNotificacao(titulo, corpo, forcar) {
 async function verificarNotificacoes(forcar) {
     if (!sessao) return;
     if (!notifDisponivel() || Notification.permission !== 'granted') return;
-    if (produtos.length === 0) return;
+    if (produtos.length === 0) { localStorage.removeItem(NOTIF_KEY); return; }
     const aviso = montarAviso();
     if (!aviso) return;
     await enviarNotificacao(aviso.titulo, aviso.corpo, forcar);
@@ -959,7 +964,7 @@ async function registrarSaida(loteId, tipo) {
     if (!podeInserir()) { showToast('Sem permissao para registrar saidas.'); return; }
     const quantidade = Number(prompt(`Quantidade para ${tipo === 'venda' ? 'venda' : 'descarte'}:`));
     if (!Number.isInteger(quantidade) || quantidade < 1) return;
-    const observacao = prompt('Observacao (opcional):') || '';
+    const observacao = tipo === 'descarte' ? '' : (prompt('Observacao (opcional):') || '');
     try {
         const { error } = await sb.rpc('registrar_movimentacao', { p_lote_id:loteId, p_tipo:tipo, p_quantidade:quantidade, p_observacao:observacao });
         if (error) throw error;
@@ -1011,6 +1016,20 @@ async function limparHistorico() {
     }
 }
 
+async function excluirHistoricoItem(tipo, id) {
+    if (!sessao || sessao.cargo !== 'admin') { showToast('Somente administrador.'); return; }
+    if (!confirm('Excluir este registro do histórico?')) return;
+    try {
+        const tabela = tipo === 'mov' ? 'movimentacoes' : 'auditoria';
+        const { error } = await sb.from(tabela).delete().eq('id', id);
+        if (error) throw error;
+        showToast('Registro excluído.');
+        abrirHistorico();
+    } catch (e) {
+        showToast('Erro ao excluir: ' + e.message);
+    }
+}
+
 async function abrirHistorico() {
     const modal = document.getElementById('modal-historico');
     const area = document.getElementById('historico-conteudo');
@@ -1021,16 +1040,23 @@ async function abrirHistorico() {
     if (btnLimpar) btnLimpar.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     try {
         const [{ data, error }, { data: logs, error: auditError }, { data: totals, error: totalsError }] = await Promise.all([
-          sb.from('movimentacoes').select('tipo,quantidade,observacao,funcionario_nome,created_at,produtos(nome)').order('created_at',{ascending:false}).limit(100),
-          sb.from('auditoria').select('tabela,acao,funcionario_nome,created_at').order('created_at',{ascending:false}).limit(100),
+          sb.from('movimentacoes').select('id,tipo,quantidade,observacao,funcionario_nome,created_at,produtos(nome)').order('created_at',{ascending:false}).limit(100),
+          sb.from('auditoria').select('id,tabela,acao,funcionario_nome,created_at').order('created_at',{ascending:false}).limit(100),
           sb.from('resumo_perdas').select('mes,tipo,operacoes,unidades').order('mes',{ascending:false}).limit(24)
         ]);
         if (error) throw error; if (auditError) throw auditError; if (totalsError) throw totalsError;
         if (resumo) { resumo.innerHTML=''; (totals||[]).forEach(t=>{ const row=document.createElement('div'); row.className='historico-row'; const mes=new Date(t.mes+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); row.textContent=`${mes} · ${t.tipo}: ${t.operacoes} operacao(oes), ${t.unidades} unidade(s)`; resumo.appendChild(row); }); if (!(totals||[]).length) resumo.textContent='Ainda nao ha dados para consolidar.'; }
         area.innerHTML = '';
-        const entries = [...(data||[]).map(m=>({date:m.created_at, text:`${m.tipo.toUpperCase()} · ${m.produtos?.nome||'Produto removido'} · ${m.quantidade} un · ${m.funcionario_nome}${m.observacao?' · '+m.observacao:''}`})), ...(logs||[]).map(a=>({date:a.created_at,text:`${a.acao.toUpperCase()} · ${a.tabela} · ${a.funcionario_nome}`}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,150);
+        const entries = [...(data||[]).map(m=>({id:m.id, type:'mov', date:m.created_at, text:`${m.tipo.toUpperCase()} · ${m.produtos?.nome||'Produto removido'} · ${m.quantidade} un · ${m.funcionario_nome}${m.observacao?' · '+m.observacao:''}`})), ...(logs||[]).map(a=>({id:a.id, type:'audit', date:a.created_at,text:`${a.acao.toUpperCase()} · ${a.tabela} · ${a.funcionario_nome}`}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,150);
         if (!entries.length) { area.textContent = 'Ainda nao existem movimentacoes.'; return; }
-        entries.forEach(entry => { const row=document.createElement('div'); row.className='historico-row'; row.textContent=`${new Date(entry.date).toLocaleString('pt-BR')} · ${entry.text}`; area.appendChild(row); });
+        entries.forEach(entry => {
+            const row=document.createElement('div'); row.className='historico-row';
+            row.innerHTML = `${new Date(entry.date).toLocaleString('pt-BR')} · ${entry.text}` +
+                (sessao && sessao.cargo === 'admin' ? ' <button type="button" class="aviso-del" data-type="' + entry.type + '" data-id="' + esc(entry.id) + '">Excluir</button>' : '');
+            const del = row.querySelector('.aviso-del');
+            if (del) del.addEventListener('click', () => excluirHistoricoItem(entry.type, entry.id));
+            area.appendChild(row);
+        });
     } catch(e) { area.textContent='Erro ao carregar historico: '+e.message; }
 }
 
@@ -1528,6 +1554,28 @@ async function restaurarBackupBase() {
     reader.readAsText(input.files[0]);
 }
 
+function aplicarDataRapida(valor, campoData) {
+    const v = String(valor || '').replace(/\D/g, '');
+    if (!campoData) return;
+    let iso = '';
+    if (v.length === 6) {
+        const dd = v.slice(0,2);
+        const mm = v.slice(2,4);
+        const yy = v.slice(4,6);
+        const ano = (parseInt(yy,10) >= 70 ? '19' : '20') + yy;
+        iso = ano + '-' + mm + '-' + dd;
+    } else if (v.length === 8) {
+        const dd = v.slice(0,2);
+        const mm = v.slice(2,4);
+        const yyyy = v.slice(4,8);
+        iso = yyyy + '-' + mm + '-' + dd;
+    }
+    if (iso) {
+        const d = new Date(iso + 'T00:00:00');
+        if (!isNaN(d.getTime())) campoData.value = iso;
+    }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     const filtrados = produtos.filter(p => {
@@ -1724,6 +1772,22 @@ document.addEventListener('DOMContentLoaded', () => { try {
     });
 
     inputBusca.addEventListener('input', renderLista);
+
+    // Data rápida (DDMMAA/DDMMAAAA) -> calendário
+    const vencRapido = document.getElementById('vencimento-rapido');
+    const vencData = document.getElementById('vencimento');
+    if (vencRapido && vencData) {
+        const handler = () => aplicarDataRapida(vencRapido.value, vencData);
+        vencRapido.addEventListener('input', handler);
+        vencRapido.addEventListener('blur', handler);
+    }
+    const editVencRapido = document.getElementById('edit-vencimento-rapido');
+    const editVencData = document.getElementById('edit-vencimento');
+    if (editVencRapido && editVencData) {
+        const handler = () => aplicarDataRapida(editVencRapido.value, editVencData);
+        editVencRapido.addEventListener('input', handler);
+        editVencRapido.addEventListener('blur', handler);
+    }
 
     // Gerenciamento generico do botao Voltar do mobile para modais
     (function setupModalHistory() {
