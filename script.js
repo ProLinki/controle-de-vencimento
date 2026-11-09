@@ -8,6 +8,9 @@ const NOTIF_KEY = 'notificacao_diaria_mercadinho';
 let DIAS_ALERTA = parseInt(localStorage.getItem(DIAS_KEY), 10) || 3;
 let produtos = [];
 let avisosCache = [];
+let mostrarTodosItens = false;
+let itensPorPagina = 15;
+let paginaAtual = 1;
 let avariasCache = [];
 let avariaAtual = null;
 let avariaItensCache = [];
@@ -247,6 +250,8 @@ function aplicarPermissoes() {
     if (avisosContainer) avisosContainer.style.display = podeAvaria() ? 'none' : '';
     const produtoLista = document.getElementById('lista-produtos');
     if (produtoLista) produtoLista.style.display = podeAvaria() ? 'none' : '';
+    const filtroBar = document.getElementById('filtro-bar');
+    if (filtroBar) filtroBar.style.display = podeAvaria() ? 'none' : '';
 
     // Drawer: remove abas desnecessarias para usuario avaria
     const menuAlertaItem = document.getElementById('menu-alerta');
@@ -333,6 +338,7 @@ async function loadProdutos() {
         });
         produtos = Object.values(map);
         produtos.sort((a, b) => new Date(a.lotes[0].vencimento) - new Date(b.lotes[0].vencimento));
+        paginaAtual = 1;
 
         // Nao removemos cadastros automaticamente: exclusoes exigem acao autorizada.
     } catch (e) {
@@ -1578,24 +1584,30 @@ function aplicarDataRapida(valor, campoData) {
 
 function renderLista() {
     const termo = normNome(inputBusca.value);
-    const filtrados = produtos.filter(p => {
+    let filtrados = produtos.filter(p => {
         const barcodeMatch = (p.codigoBarras || '').toLowerCase().includes(termo) ||
             p.lotes.some(l => (l.codigoBarras || '').toLowerCase().includes(termo));
         if (termo && !normNome(p.nome).includes(termo) && !barcodeMatch) return false;
         const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade, 10) || 0) > 0);
         if (lotesAtivos.length === 0) return false;
+        if (mostrarTodosItens) return true;
         // A lista passa a respeitar o prazo de alerta configurado (dias).
         return lotesAtivos.some(l => diasRestantes(l.vencimento) <= DIAS_ALERTA);
     });
 
+    // Paginação para evitar sobrecarga ao mostrar todos.
+    const total = filtrados.length;
+    const limite = paginaAtual * itensPorPagina;
+    const visiveis = mostrarTodosItens ? filtrados.slice(0, limite) : filtrados;
+
     listaProdutos.innerHTML = '';
-    if (filtrados.length === 0) { vazio.style.display = 'block'; return; }
+    if (visiveis.length === 0) { vazio.style.display = 'block'; return; }
     vazio.style.display = 'none';
 
     const ed = podeAtualizar();
     const ex = podeExcluirItem();
 
-    filtrados.forEach(p => {
+    visiveis.forEach(p => {
         const card = document.createElement('div');
         card.className = 'produto-card';
 
@@ -1696,6 +1708,19 @@ function renderLista() {
 
         listaProdutos.appendChild(card);
     });
+
+    if (mostrarTodosItens && limite < total) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline';
+        btn.textContent = 'Carregar mais itens';
+        btn.style.marginTop = '8px';
+        btn.addEventListener('click', () => { paginaAtual++; renderLista(); });
+        listaProdutos.appendChild(btn);
+    }
+
+    const info = document.getElementById('filtro-info');
+    if (info) info.textContent = mostrarTodosItens ? ('Mostrando ' + Math.min(limite, total) + ' de ' + total + ' itens') : (total + ' item(ns) no prazo');
 }
 
 function renderStats() {
@@ -1771,7 +1796,17 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (modalCadastro) modalCadastro.classList.remove('show');
     });
 
-    inputBusca.addEventListener('input', renderLista);
+    inputBusca.addEventListener('input', () => { paginaAtual = 1; renderLista(); });
+
+    const btnToggleTodos = document.getElementById('btn-toggle-todos');
+    if (btnToggleTodos) {
+        btnToggleTodos.addEventListener('click', () => {
+            mostrarTodosItens = !mostrarTodosItens;
+            paginaAtual = 1;
+            btnToggleTodos.textContent = mostrarTodosItens ? 'Filtrar por prazo' : 'Mostrar todos os itens';
+            renderLista();
+        });
+    }
 
     // Data rápida (DDMMAA/DDMMAAAA) -> calendário
     const vencRapido = document.getElementById('vencimento-rapido');
