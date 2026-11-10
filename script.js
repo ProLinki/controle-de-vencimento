@@ -1168,6 +1168,15 @@ async function deleteAviso(id) {
     }
 }
 
+function fecharModalProdutoBase() {
+    const modal = document.getElementById('modal-produto-base');
+    if (modal) modal.classList.remove('show');
+    const codigo = document.getElementById('pb-codigo'); if (codigo) codigo.value = '';
+    const nome = document.getElementById('pb-nome'); if (nome) nome.value = '';
+    const unidade = document.getElementById('pb-unidade'); if (unidade) unidade.value = 'litros';
+    const conteudo = document.getElementById('pb-conteudo'); if (conteudo) conteudo.value = '';
+}
+
 async function saveProdutoBase(e) {
     if (e) e.preventDefault();
     if (!sessao || sessao.cargo !== 'admin') { showToast('Somente administrador cadastra item base.'); return; }
@@ -1942,8 +1951,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Cadastrar item base
     const menuProdutoBase = document.getElementById('menu-produto-base');
     const modalProdutoBase = document.getElementById('modal-produto-base');
-    if (menuProdutoBase) menuProdutoBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalProdutoBase) modalProdutoBase.classList.add('show'); });
-    if (modalProdutoBase) modalProdutoBase.addEventListener('click', e => { if (e.target === modalProdutoBase) modalProdutoBase.classList.remove('show'); });
+    if (menuProdutoBase) menuProdutoBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); fecharModalProdutoBase(); if (modalProdutoBase) modalProdutoBase.classList.add('show'); });
+    if (modalProdutoBase) modalProdutoBase.addEventListener('click', e => { if (e.target === modalProdutoBase) fecharModalProdutoBase(); });
     const formProdutoBase = document.getElementById('formProdutoBase');
     if (formProdutoBase) formProdutoBase.addEventListener('submit', saveProdutoBase);
 
@@ -2027,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     const fab = document.getElementById('fab-cadastrar');
     if (fab) fab.addEventListener('click', () => { limparFormCadastro(); if (modalCadastro) modalCadastro.classList.add('show'); });
     const fabBase = document.getElementById('fab-produto-base');
-    if (fabBase) fabBase.addEventListener('click', () => { const m = document.getElementById('modal-produto-base'); if (m) m.classList.add('show'); });
+    if (fabBase) fabBase.addEventListener('click', () => { fecharModalProdutoBase(); const m = document.getElementById('modal-produto-base'); if (m) m.classList.add('show'); });
     const fabAvaria = document.getElementById('fab-avaria');
     if (fabAvaria) fabAvaria.addEventListener('click', () => { abrirNovaAvaria(); });
 
