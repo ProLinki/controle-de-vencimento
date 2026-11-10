@@ -91,10 +91,23 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
-      const { count, error: countError } = await admin.from('funcionarios')
-        .select('id', { count: 'exact', head: true }).eq('cargo', 'admin').eq('ativo', true);
-      if (countError) throw countError;
-      if (target.cargo === 'admin' && count <= 1) return res.status(400).json({ error: 'Mantenha pelo menos um administrador ativo.' });
+      const hard = body.hard === true;
+      if (target.id === actor.id) return res.status(400).json({ error: 'Voce nao pode excluir o proprio cadastro.' });
+      if (target.cargo === 'admin') {
+        const { count, error: countError } = await admin.from('funcionarios')
+          .select('id', { count: 'exact', head: true }).eq('cargo', 'admin').eq('ativo', true);
+        if (countError) throw countError;
+        if (count <= 1) return res.status(400).json({ error: 'Mantenha pelo menos um administrador ativo.' });
+      }
+      if (hard) {
+        if (target.auth_user_id) {
+          const { error: authDeleteError } = await admin.auth.admin.deleteUser(target.auth_user_id);
+          if (authDeleteError) throw authDeleteError;
+        }
+        const { error: deleteError } = await admin.from('funcionarios').delete().eq('id', id);
+        if (deleteError) throw deleteError;
+        return res.status(200).json({ ok: true, hard: true });
+      }
       const { error } = await admin.from('funcionarios').update({ ativo: false, atualizado_em: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
       return res.status(200).json({ ok: true });

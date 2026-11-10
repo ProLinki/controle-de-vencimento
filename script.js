@@ -685,6 +685,12 @@ function renderFuncionarios() {
         const bEx = document.createElement('button');
         bEx.type = 'button'; bEx.className = 'btn-mini mini-excluir'; bEx.textContent = f.ativo ? 'Desativar' : (f.acesso_configurado ? 'Ativar' : 'Configurar acesso');
         bEx.addEventListener('click', () => excluirFuncionario(f));
+        if (podeGerirFuncionarios()) {
+            const bDel = document.createElement('button');
+            bDel.type = 'button'; bDel.className = 'btn-mini mini-excluir'; bDel.textContent = 'Excluir';
+            bDel.addEventListener('click', () => excluirFuncionarioHard(f));
+            acoes.append(bDel);
+        }
         acoes.append(bEd, bEx);
         card.append(info, badge, acoes);
         listaFuncionarios.appendChild(card);
@@ -727,6 +733,19 @@ async function salvarFuncionario(e) {
         else await apiFuncionarios('POST', { nome, login, cargo, senha });
         limparFormFunc(); await loadFuncionarios(); showToast(id ? 'Funcionario atualizado!' : 'Funcionario criado!');
     } catch (err) { showToast('Erro: ' + err.message); }
+}
+
+async function excluirFuncionarioHard(f) {
+    if (!podeGerirFuncionarios()) { showToast('Sem permissão.'); return; }
+    if (f.id === sessao.id) { showToast('Você não pode excluir o próprio cadastro.'); return; }
+    if (!confirm('Excluir permanentemente "' + f.nome + '"? Esta ação não pode ser desfeita.')) return;
+    try {
+        await apiFuncionarios('DELETE', { id: f.id, hard: true });
+        showToast('Funcionário excluído.');
+        await loadFuncionarios();
+    } catch (e) {
+        showToast('Erro ao excluir: ' + e.message);
+    }
 }
 
 async function excluirFuncionario(f) {
