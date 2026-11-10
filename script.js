@@ -483,6 +483,8 @@ async function iniciarScan() {
                             await preencherBaseDoCatalogo(val);
                         } else if (target && target.id === 'av-item-codigo') {
                             await preencherAvariaDoCatalogo(val);
+                        } else if (target && target.id === 'pesq-codigo') {
+                            await pesquisarPorCodigo();
                         } else {
                             await preencherDoCatalogo(val);
                         }
@@ -1582,6 +1584,57 @@ function aplicarDataRapida(valor, campoData) {
     }
 }
 
+// ---------- PESQUISA POR CODIGO DE BARRAS ----------
+async function pesquisarPorCodigo() {
+    const codigo = ((document.getElementById('pesq-codigo') || {}).value || '').trim();
+    const res = document.getElementById('pesq-resultado');
+    if (!codigo) { if (res) res.textContent = 'Informe um código de barras.'; return; }
+    if (!sbReady) { showToast('Supabase não conectado.'); return; }
+    if (res) res.textContent = 'Buscando...';
+    try {
+        const { data: base } = await sb.from('produtos_base').select('*').eq('codigo_barras', codigo).maybeSingle();
+        const { data: prod } = await sb.from('produtos').select('*').eq('codigo_barras', codigo).maybeSingle();
+        let lotes = [];
+        let movs = [];
+        if (prod && prod.id) {
+            const { data: ls } = await sb.from('lotes').select('*').eq('produto_id', prod.id).order('created_at', { ascending: false });
+            lotes = ls || [];
+            const { data: ms } = await sb.from('movimentacoes').select('*').eq('produto_id', prod.id).order('created_at', { ascending: false }).limit(50);
+            movs = ms || [];
+        }
+        let html = '';
+        if (base) {
+            html += '<div class="historico-row"><strong>Base:</strong> ' + esc(base.nome) + ' · ' + esc(base.unidade) + ' · ' + esc(base.conteudo) + '</div>';
+        } else {
+            html += '<div class="historico-row">Não encontrado em produtos_base.</div>';
+        }
+        if (prod) {
+            html += '<div class="historico-row"><strong>Produto:</strong> ' + esc(prod.nome) + '</div>';
+            if (lotes.length) {
+                html += '<div class="historico-row"><strong>Lotes:</strong></div>';
+                lotes.forEach(l => {
+                    html += '<div class="historico-row">Qtd: ' + (parseInt(l.quantidade,10)||0) + ' · Vence: ' + (l.vencimento || '') + ' · Criado: ' + fmtDataHora(l.created_at) + '</div>';
+                });
+            } else {
+                html += '<div class="historico-row">Nenhum lote encontrado.</div>';
+            }
+            if (movs.length) {
+                html += '<div class="historico-row"><strong>Movimentações:</strong></div>';
+                movs.forEach(m => {
+                    html += '<div class="historico-row">' + fmtDataHora(m.created_at) + ' · ' + (m.tipo || '') + ' · ' + (m.quantidade || 0) + ' un · ' + esc(m.funcionario_nome || '') + '</div>';
+                });
+            } else {
+                html += '<div class="historico-row">Nenhuma movimentação encontrada.</div>';
+            }
+        } else {
+            html += '<div class="historico-row">Produto não encontrado na tabela produtos.</div>';
+        }
+        if (res) res.innerHTML = html;
+    } catch (e) {
+        if (res) res.textContent = 'Erro: ' + e.message;
+    }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     let filtrados = produtos.filter(p => {
@@ -1879,6 +1932,20 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Avisos
     const menuAvisos = document.getElementById('menu-avisos');
     if (menuAvisos) menuAvisos.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalAvisos) { modalAvisos.classList.add('show'); loadAvisos(); } });
+
+    const menuPesqCodigo = document.getElementById('menu-pesquisa-codigo');
+    const modalPesqCodigo = document.getElementById('modal-pesquisa-codigo');
+    if (menuPesqCodigo) menuPesqCodigo.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalPesqCodigo) modalPesqCodigo.classList.add('show'); });
+    if (modalPesqCodigo) modalPesqCodigo.addEventListener('click', e => { if (e.target === modalPesqCodigo) modalPesqCodigo.classList.remove('show'); });
+    const btnPesquisarCodigo = document.getElementById('btn-pesquisar-codigo');
+    if (btnPesquisarCodigo) btnPesquisarCodigo.addEventListener('click', pesquisarPorCodigo);
+    const btnScanPesq = document.getElementById('btn-scan-pesq');
+    if (btnScanPesq) btnScanPesq.addEventListener('click', () => { pararScan(); scanTargetInput = document.getElementById('pesq-codigo'); if (modalScan && !modalScan.classList.contains('show')) modalScan.classList.add('show'); iniciarScan(); });
+    const pesqCodigo = document.getElementById('pesq-codigo');
+    if (pesqCodigo) {
+        pesqCodigo.addEventListener('change', pesquisarPorCodigo);
+        pesqCodigo.addEventListener('blur', pesquisarPorCodigo);
+    }
 
     const menuBackupBase = document.getElementById('menu-backup-base');
     const modalBackupBase = document.getElementById('modal-backup-base');
