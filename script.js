@@ -604,7 +604,7 @@ function limparFormCadastro() {
     const vc = document.getElementById('vencimento');
     const cb = document.getElementById('codigoBarras');
     const nm = document.getElementById('nome');
-    if (q) q.value = 1;
+    if (q) q.value = '';
     if (u) u.value = 'litros';
     if (c) c.value = '';
     if (vc) vc.value = new Date().toISOString().split('T')[0];
