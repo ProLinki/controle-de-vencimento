@@ -1613,30 +1613,39 @@ async function pesquisarPorCodigo() {
         }
         let html = '';
         if (base) {
-            html += '<div class="historico-row"><strong>Base:</strong> ' + esc(base.nome) + ' · ' + esc(base.unidade) + ' · ' + esc(base.conteudo) + '</div>';
+            html += '<div class="pesq-card"><div class="pesq-titulo">Catálogo base</div>' +
+                '<div class="pesq-linha">Nome: ' + esc(base.nome) + '</div>' +
+                '<div class="pesq-linha">Unidade: ' + esc(base.unidade) + '</div>' +
+                '<div class="pesq-linha">Conteúdo: ' + esc(base.conteudo) + '</div></div>';
         } else {
-            html += '<div class="historico-row">Não encontrado em produtos_base.</div>';
+            html += '<div class="pesq-card"><div class="pesq-linha">Não encontrado em produtos_base.</div></div>';
         }
         if (prod) {
-            html += '<div class="historico-row"><strong>Produto:</strong> ' + esc(prod.nome) + '</div>';
+            html += '<div class="pesq-card"><div class="pesq-titulo">Produto</div>' +
+                '<div class="pesq-linha">Nome: ' + esc(prod.nome) + '</div>' +
+                '<div class="pesq-linha">ID: ' + esc(prod.id) + '</div></div>';
             if (lotes.length) {
-                html += '<div class="historico-row"><strong>Lotes:</strong></div>';
+                html += '<div class="pesq-card"><div class="pesq-titulo">Lotes</div>';
                 lotes.forEach(l => {
-                    html += '<div class="historico-row">Qtd: ' + (parseInt(l.quantidade,10)||0) + ' · Vence: ' + (l.vencimento || '') + ' · Criado: ' + fmtDataHora(l.created_at) + '</div>';
+                    html += '<div class="pesq-linha">Qtd: ' + (parseInt(l.quantidade,10)||0) + ' · Vence: ' + (l.vencimento || '') + '</div>' +
+                        '<div class="pesq-linha">Criado: ' + fmtDataHora(l.created_at) + '</div>';
                 });
+                html += '</div>';
             } else {
-                html += '<div class="historico-row">Nenhum lote encontrado.</div>';
+                html += '<div class="pesq-card"><div class="pesq-linha">Nenhum lote encontrado.</div></div>';
             }
             if (movs.length) {
-                html += '<div class="historico-row"><strong>Movimentações:</strong></div>';
+                html += '<div class="pesq-card"><div class="pesq-titulo">Movimentações</div>';
                 movs.forEach(m => {
-                    html += '<div class="historico-row">' + fmtDataHora(m.created_at) + ' · ' + (m.tipo || '') + ' · ' + (m.quantidade || 0) + ' un · ' + esc(m.funcionario_nome || '') + '</div>';
+                    html += '<div class="pesq-linha">' + fmtDataHora(m.created_at) + ' · ' + (m.tipo || '') + ' · ' + (m.quantidade || 0) + ' un</div>' +
+                        '<div class="pesq-linha">Funcionário: ' + esc(m.funcionario_nome || '') + '</div>';
                 });
+                html += '</div>';
             } else {
-                html += '<div class="historico-row">Nenhuma movimentação encontrada.</div>';
+                html += '<div class="pesq-card"><div class="pesq-linha">Nenhuma movimentação encontrada.</div></div>';
             }
         } else {
-            html += '<div class="historico-row">Produto não encontrado na tabela produtos.</div>';
+            html += '<div class="pesq-card"><div class="pesq-linha">Produto não encontrado na tabela produtos.</div></div>';
         }
         if (res) res.innerHTML = html;
     } catch (e) {

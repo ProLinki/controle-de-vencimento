@@ -637,6 +637,11 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.show { transform:translate(-50%,0); opacity:1; }
 .pull-refresh.ready { color:#f5c542; }
 
+.pesq-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:4px; }
+.pesq-card .pesq-titulo { font-size:1rem; font-weight:700; color:#282720; margin-bottom:2px; }
+.pesq-card .pesq-linha { font-size:.9rem; color:#514c3f; line-height:1.35; }
+.pesq-card .pesq-destaque { font-size:.95rem; font-weight:600; color:#a77a0a; }
+
 .avaria-item-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px; }
 .avaria-item-card .avaria-item-nome { font-size:1.05rem; font-weight:700; color:#282720; }
 .avaria-item-card .avaria-item-linha { font-size:.92rem; color:#514c3f; line-height:1.35; }
