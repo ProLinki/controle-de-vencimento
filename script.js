@@ -1585,6 +1585,15 @@ function aplicarDataRapida(valor, campoData) {
 }
 
 // ---------- PESQUISA POR CODIGO DE BARRAS ----------
+function fecharPesquisaCodigo() {
+    const modal = document.getElementById('modal-pesquisa-codigo');
+    if (modal) modal.classList.remove('show');
+    const codigo = document.getElementById('pesq-codigo');
+    if (codigo) codigo.value = '';
+    const res = document.getElementById('pesq-resultado');
+    if (res) res.textContent = '';
+}
+
 async function pesquisarPorCodigo() {
     const codigo = ((document.getElementById('pesq-codigo') || {}).value || '').trim();
     const res = document.getElementById('pesq-resultado');
@@ -1936,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
     const menuPesqCodigo = document.getElementById('menu-pesquisa-codigo');
     const modalPesqCodigo = document.getElementById('modal-pesquisa-codigo');
     if (menuPesqCodigo) menuPesqCodigo.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalPesqCodigo) modalPesqCodigo.classList.add('show'); });
-    if (modalPesqCodigo) modalPesqCodigo.addEventListener('click', e => { if (e.target === modalPesqCodigo) modalPesqCodigo.classList.remove('show'); });
+    if (modalPesqCodigo) modalPesqCodigo.addEventListener('click', e => { if (e.target === modalPesqCodigo) fecharPesquisaCodigo(); });
     const btnPesquisarCodigo = document.getElementById('btn-pesquisar-codigo');
     if (btnPesquisarCodigo) btnPesquisarCodigo.addEventListener('click', pesquisarPorCodigo);
     const btnScanPesq = document.getElementById('btn-scan-pesq');
