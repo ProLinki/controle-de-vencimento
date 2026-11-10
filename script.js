@@ -1206,8 +1206,7 @@ async function saveProdutoBase(e) {
         if (form) form.reset();
         const c = document.getElementById('pb-conteudo');
         if (c) c.value = '';
-        const m = document.getElementById('modal-produto-base');
-        if (m) m.classList.remove('show');
+        // Mantem o modal aberto para novos cadastros; fecha apenas via Cancelar/Voltar.
     } catch (err) {
         showToast('Erro ao salvar item base: ' + err.message);
     }
