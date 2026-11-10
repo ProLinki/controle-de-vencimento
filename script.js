@@ -591,6 +591,8 @@ function abrirModal(loteId, produtoId) {
     editVenc.value = lote.vencimento;
     const editVR = document.getElementById('edit-vencimento-rapido');
     if (editVR) editVR.value = '';
+    const editVRM = document.getElementById('edit-vencimento-rapido-mes');
+    if (editVRM) editVRM.value = '';
     modalOverlay.classList.add('show');
     editQtd.focus();
 }
@@ -610,6 +612,8 @@ function limparFormCadastro() {
     if (vc) vc.value = new Date().toISOString().split('T')[0];
     const vr = document.getElementById('vencimento-rapido');
     if (vr) vr.value = '';
+    const vrm = document.getElementById('vencimento-rapido-mes');
+    if (vrm) vrm.value = '';
     if (cb) cb.value = '';
     if (nm) nm.value = '';
 }
@@ -1570,6 +1574,29 @@ async function restaurarBackupBase() {
     reader.readAsText(input.files[0]);
 }
 
+function aplicarDataRapidaMes(valor, campoData) {
+    const v = String(valor || '').replace(/\D/g, '');
+    if (!campoData) return;
+    let mm = '', yyyy = '';
+    if (v.length === 4) {
+        mm = v.slice(0,2);
+        const yy = v.slice(2,4);
+        yyyy = (parseInt(yy,10) >= 70 ? '19' : '20') + yy;
+    } else if (v.length === 6) {
+        mm = v.slice(0,2);
+        yyyy = v.slice(2,6);
+    } else {
+        return;
+    }
+    const m = parseInt(mm,10);
+    const y = parseInt(yyyy,10);
+    if (m < 1 || m > 12 || isNaN(y)) return;
+    const lastDay = new Date(y, m, 0).getDate();
+    const dd = String(lastDay).padStart(2,'0');
+    const mmStr = String(m).padStart(2,'0');
+    campoData.value = y + '-' + mmStr + '-' + dd;
+}
+
 function aplicarDataRapida(valor, campoData) {
     const v = String(valor || '').replace(/\D/g, '');
     if (!campoData) return;
@@ -1895,12 +1922,24 @@ document.addEventListener('DOMContentLoaded', () => { try {
         vencRapido.addEventListener('input', handler);
         vencRapido.addEventListener('blur', handler);
     }
+    const vencRapidoMes = document.getElementById('vencimento-rapido-mes');
+    if (vencRapidoMes && vencData) {
+        const handler = () => aplicarDataRapidaMes(vencRapidoMes.value, vencData);
+        vencRapidoMes.addEventListener('input', handler);
+        vencRapidoMes.addEventListener('blur', handler);
+    }
     const editVencRapido = document.getElementById('edit-vencimento-rapido');
     const editVencData = document.getElementById('edit-vencimento');
     if (editVencRapido && editVencData) {
         const handler = () => aplicarDataRapida(editVencRapido.value, editVencData);
         editVencRapido.addEventListener('input', handler);
         editVencRapido.addEventListener('blur', handler);
+    }
+    const editVencRapidoMes = document.getElementById('edit-vencimento-rapido-mes');
+    if (editVencRapidoMes && editVencData) {
+        const handler = () => aplicarDataRapidaMes(editVencRapidoMes.value, editVencData);
+        editVencRapidoMes.addEventListener('input', handler);
+        editVencRapidoMes.addEventListener('blur', handler);
     }
 
     // Gerenciamento generico do botao Voltar do mobile para modais
