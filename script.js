@@ -1736,7 +1736,8 @@ function renderLista() {
         const card = document.createElement('div');
         card.className = 'produto-card';
 
-        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        let lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        if (!mostrarTodosItens) lotesAtivos = lotesAtivos.filter(l => diasRestantes(l.vencimento) <= DIAS_ALERTA);
         const totalQtd = lotesAtivos.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
         // Lote ativo mais proximo do vencimento determina a prioridade visual.
         const lotesOrd = [...lotesAtivos].sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento));
