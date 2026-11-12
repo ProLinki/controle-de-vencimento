@@ -2026,10 +2026,12 @@ document.addEventListener('DOMContentLoaded', () => { try {
         const { data: authState } = await sb.auth.getSession();
         const user = authState.session && authState.session.user;
         if (user) {
+          telaLogin.style.display = 'none';
           const { data: perfil, error } = await sb.from('funcionarios').select('id,nome,login,cargo,ativo').eq('auth_user_id', user.id).maybeSingle();
           if (error) throw error;
-          if (perfil && perfil.ativo) { sessao = { ...perfil, loginEm: new Date().toISOString() }; telaLogin.style.display = 'none'; await iniciarApp(); return; }
+          if (perfil && perfil.ativo) { sessao = { ...perfil, loginEm: new Date().toISOString() }; await iniciarApp(); return; }
           await sb.auth.signOut();
+          telaLogin.style.display = 'flex';
         }
       } catch (err) { console.error('Restauracao de sessao:', err); }
       sessao = null; telaLogin.style.display = 'flex'; loginUsuario.focus();
