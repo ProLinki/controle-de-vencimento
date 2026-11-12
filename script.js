@@ -238,6 +238,24 @@ function aplicarPermissoes() {
     if (menuBackupBaseItem) menuBackupBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuVarreduraItem = document.getElementById('menu-varredura-item');
     if (menuVarreduraItem) menuVarreduraItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
+
+    // Drawer: patrao ve apenas opcoes especificas
+    if (sessao && sessao.cargo === 'patrao') {
+        const permitidos = new Set(['menu-alerta','menu-historico','menu-avisos','menu-usuario','menu-sair']);
+        document.querySelectorAll('.menu-lista li').forEach(li => {
+            const a = li.querySelector('a');
+            if (!a) return;
+            li.style.display = permitidos.has(a.id) ? '' : 'none';
+        });
+    } else {
+        // restaura visibilidade padrao para outros cargos
+        const menuCadastroItem = document.getElementById('menu-cadastro');
+        if (menuCadastroItem && menuCadastroItem.parentElement) menuCadastroItem.parentElement.style.display = podeInserir() ? '' : 'none';
+        const menuAvariasItem = document.getElementById('menu-avarias-item');
+        if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
+        const menuFuncItem = document.getElementById('menu-funcionarios-item');
+        if (menuFuncItem) menuFuncItem.style.display = podeGerirFuncionarios() ? '' : 'none';
+    }
     const menuAvariasItem = document.getElementById('menu-avarias-item');
     if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
     const fabAvaria = document.getElementById('fab-avaria');
