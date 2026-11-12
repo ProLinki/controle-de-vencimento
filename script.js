@@ -236,6 +236,8 @@ function aplicarPermissoes() {
     if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuBackupBaseItem = document.getElementById('menu-backup-base-item');
     if (menuBackupBaseItem) menuBackupBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
+    const menuVarreduraItem = document.getElementById('menu-varredura-item');
+    if (menuVarreduraItem) menuVarreduraItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuAvariasItem = document.getElementById('menu-avarias-item');
     if (menuAvariasItem) menuAvariasItem.style.display = podeAvaria() ? '' : 'none';
     const fabAvaria = document.getElementById('fab-avaria');
@@ -1747,6 +1749,59 @@ async function mesclarLotes(produtoId) {
     }
 }
 
+// ---------- VARREDURA DE MESCLAGEM ----------
+function produtosComMesclagem() {
+    return produtos.filter(p => {
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        const grupos = {};
+        lotesAtivos.forEach(l => {
+            if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
+            grupos[l.vencimento].push(l);
+        });
+        return Object.keys(grupos).some(v => grupos[v].length > 1);
+    });
+}
+
+function renderVarredura() {
+    const lista = document.getElementById('varredura-lista');
+    if (!lista) return;
+    lista.innerHTML = '';
+    const candidatos = produtosComMesclagem();
+    if (candidatos.length === 0) {
+        lista.textContent = 'Nenhum produto com lotes de mesma data para mesclar.';
+        return;
+    }
+    candidatos.forEach(p => {
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        const grupos = {};
+        lotesAtivos.forEach(l => {
+            if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
+            grupos[l.vencimento].push(l);
+        });
+        const datas = Object.keys(grupos).filter(v => grupos[v].length > 1);
+        const row = document.createElement('div');
+        row.className = 'historico-row';
+        row.innerHTML = '<strong>' + esc(p.nome) + '</strong><br>' +
+            datas.map(v => 'Data ' + v + ': ' + grupos[v].map(l => l.quantidade + ' un').join(' + ')).join('<br>') +
+            '<br><button type="button" class="btn-mini mini-editar" data-id="' + esc(p.id) + '" style="margin-top:6px">Mesclar este produto</button>';
+        const btn = row.querySelector('button');
+        if (btn) btn.addEventListener('click', () => { mesclarLotes(p.id).then(() => { renderVarredura(); }); });
+        lista.appendChild(row);
+    });
+}
+
+async function mesclarTodosVarredura() {
+    const candidatos = produtosComMesclagem();
+    if (candidatos.length === 0) { showToast('Nenhum produto para mesclar.'); return; }
+    if (!confirm('Mesclar todos os produtos listados?')) return;
+    for (const p of candidatos) {
+        await mesclarLotes(p.id);
+    }
+    await loadProdutos();
+    renderVarredura();
+    showToast('Varredura concluída.');
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     let filtrados = produtos.filter(p => {
@@ -2094,6 +2149,13 @@ document.addEventListener('DOMContentLoaded', () => { try {
     const menuBackupBase = document.getElementById('menu-backup-base');
     const modalBackupBase = document.getElementById('modal-backup-base');
     if (menuBackupBase) menuBackupBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalBackupBase) modalBackupBase.classList.add('show'); });
+
+    const menuVarredura = document.getElementById('menu-varredura');
+    const modalVarredura = document.getElementById('modal-varredura');
+    if (menuVarredura) menuVarredura.addEventListener('click', async e => { e.preventDefault(); fecharMenu(); await loadProdutos(); if (modalVarredura) { modalVarredura.classList.add('show'); renderVarredura(); } });
+    if (modalVarredura) modalVarredura.addEventListener('click', e => { if (e.target === modalVarredura) modalVarredura.classList.remove('show'); });
+    const btnVarreduraMesclarTudo = document.getElementById('btn-varredura-mesclar-tudo');
+    if (btnVarreduraMesclarTudo) btnVarreduraMesclarTudo.addEventListener('click', mesclarTodosVarredura);
     if (modalBackupBase) modalBackupBase.addEventListener('click', e => { if (e.target === modalBackupBase) modalBackupBase.classList.remove('show'); });
     const btnBaixarBackup = document.getElementById('btn-baixar-backup-base');
     if (btnBaixarBackup) btnBaixarBackup.addEventListener('click', baixarBackupBase);
