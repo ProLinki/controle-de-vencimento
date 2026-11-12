@@ -1707,6 +1707,46 @@ async function pesquisarPorCodigo() {
     }
 }
 
+async function mesclarLotes(produtoId) {
+    if (!podeAtualizar() || !sbReady) { showToast('Sem permissão.'); return; }
+    const p = produtos.find(x => x.id === produtoId);
+    if (!p) return;
+    const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+    const grupos = {};
+    lotesAtivos.forEach(l => {
+        if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
+        grupos[l.vencimento].push(l);
+    });
+    let mesclou = false;
+    try {
+        for (const venc of Object.keys(grupos)) {
+            const grupo = grupos[venc];
+            if (grupo.length < 2) continue;
+            const total = grupo.reduce((s,l) => s + (parseInt(l.quantidade,10)||0), 0);
+            const alvo = grupo[0];
+            const { error: upErr } = await sb.from('lotes').update({
+                quantidade: total,
+                atualizado_por: sessao ? sessao.nome : 'Sistema',
+                atualizado_em: new Date().toISOString()
+            }).eq('id', alvo.id);
+            if (upErr) throw upErr;
+            for (let i = 1; i < grupo.length; i++) {
+                const { error: delErr } = await sb.from('lotes').delete().eq('id', grupo[i].id);
+                if (delErr) throw delErr;
+            }
+            mesclou = true;
+        }
+        if (mesclou) {
+            await loadProdutos();
+            showToast('Lotes de mesma data mesclados.');
+        } else {
+            showToast('Nenhum lote para mesclar.');
+        }
+    } catch (e) {
+        showToast('Erro ao mesclar: ' + e.message);
+    }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     let filtrados = produtos.filter(p => {
@@ -1821,6 +1861,25 @@ function renderLista() {
 
             listaLotes.appendChild(item);
         });
+
+        // Opcao de mesclar lotes de mesma data (quando houver mais de um)
+        if (podeAtualizar()) {
+            const grupos = {};
+            lotesAtivos.forEach(l => {
+                if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
+                grupos[l.vencimento].push(l);
+            });
+            const mescliveis = Object.keys(grupos).filter(v => grupos[v].length > 1);
+            if (mescliveis.length > 0) {
+                const btnMesclar = document.createElement('button');
+                btnMesclar.type = 'button';
+                btnMesclar.className = 'btn btn-outline';
+                btnMesclar.textContent = 'Mesclar lotes de mesma data';
+                btnMesclar.style.marginTop = '8px';
+                btnMesclar.addEventListener('click', (ev) => { ev.stopPropagation(); mesclarLotes(p.id); });
+                detalhes.appendChild(btnMesclar);
+            }
+        }
 
         detalhes.appendChild(listaLotes);
         card.appendChild(detalhes);
