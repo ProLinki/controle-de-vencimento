@@ -2038,6 +2038,17 @@ document.addEventListener('DOMContentLoaded', () => { try {
 
     inputBusca.addEventListener('input', () => { paginaAtual = 1; renderLista(); });
 
+    // Mostrar/ocultar senha
+    document.querySelectorAll('.btn-toggle-senha').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.target);
+            if (!input) return;
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            btn.textContent = showing ? '👁️' : '🙈';
+        });
+    });
+
     const btnToggleTodos = document.getElementById('btn-toggle-todos');
     if (btnToggleTodos) {
         btnToggleTodos.addEventListener('click', () => {
