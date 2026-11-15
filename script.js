@@ -2053,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', () => { try {
         if (cb && !codigoBarrasPadraoValido(cb)) { showToast('Código de barras com quantidade de caracteres fora do padrão.'); return; }
         await saveProduto(nome, unidade, conteudo, qtd, venc, cb);
         limparFormCadastro();
-        if (modalCadastro) modalCadastro.classList.remove('show');
+        // Mantem o modal aberto para novos cadastros; fecha via Cancelar/Voltar.
     });
 
     inputBusca.addEventListener('input', () => { paginaAtual = 1; renderLista(); });
