@@ -1247,23 +1247,21 @@ async function saveProdutoBase(e) {
         return;
     }
     if (!sbReady) { showToast('Supabase não conectado.'); return; }
-    try {
-        const { error } = await sb.from('produtos_base').upsert({
-            codigo_barras: codigo.trim(),
-            nome: nome.trim(),
-            unidade,
-            conteudo
-        });
+    // Limpa imediatamente e salva em segundo plano.
+    const form = document.getElementById('formProdutoBase');
+    if (form) form.reset();
+    const c = document.getElementById('pb-conteudo');
+    if (c) c.value = '';
+    showToast('Salvando item base...');
+    sb.from('produtos_base').upsert({
+        codigo_barras: codigo.trim(),
+        nome: nome.trim(),
+        unidade,
+        conteudo
+    }).then(({ error }) => {
         if (error) throw error;
         showToast('Item base salvo com sucesso!');
-        const form = document.getElementById('formProdutoBase');
-        if (form) form.reset();
-        const c = document.getElementById('pb-conteudo');
-        if (c) c.value = '';
-        // Mantem o modal aberto para novos cadastros; fecha apenas via Cancelar/Voltar.
-    } catch (err) {
-        showToast('Erro ao salvar item base: ' + err.message);
-    }
+    }).catch(e => showToast('Erro ao salvar item base: ' + (e.message || e)));
 }
 
 function codigoBarrasPadraoValido(valor) {
@@ -2067,8 +2065,8 @@ document.addEventListener('DOMContentLoaded', () => { try {
         const venc = document.getElementById('vencimento').value;
         if (!nome || !qtd || !venc || !unidade || !Number.isFinite(conteudo) || conteudo <= 0) { showToast('Preencha todos os campos corretamente.'); return; }
         if (cb && !codigoBarrasPadraoValido(cb)) { showToast('Código de barras com quantidade de caracteres fora do padrão.'); return; }
-        await saveProduto(nome, unidade, conteudo, qtd, venc, cb);
         limparFormCadastro();
+        saveProduto(nome, unidade, conteudo, qtd, venc, cb).catch(e => showToast('Erro ao salvar: ' + (e.message || e)));
         // Mantem o modal aberto para novos cadastros; fecha via Cancelar/Voltar.
     });
 
