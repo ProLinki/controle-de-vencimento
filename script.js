@@ -1871,16 +1871,16 @@ function renderLista() {
         resumo.className = 'produto-resumo';
         resumo.innerHTML =
             '<div class="nome-scroll"><span class="nome-text">' + esc(p.nome) + '</span></div>' +
-            '<div class="produto-info">' +
-            '<span>Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
-            '<span>' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(abrevUnidade(p.unidade)) : '') + '</span>' +
+            '<div class="produto-info" style="flex-wrap:nowrap;gap:8px">' +
+            '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
+            '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(abrevUnidade(p.unidade)) : '') + '</span>' +
             '</div>' +
-            '<div class="produto-info" style="justify-content:space-between">' +
+            '<div class="produto-info" style="justify-content:space-between;flex-wrap:nowrap;gap:8px">' +
             (dProx < 0
-                ? '<span>Total: ' + totalQtd + ' un  <span class="status status-' + sProx.c + '">' + sProx.t + '</span></span>' +
-                  '<span>' + txtDias(dProx) + '</span>'
-                : '<span>Total: ' + totalQtd + ' un</span>' +
-                  '<span><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>') +
+                ? '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Total: ' + totalQtd + ' un  <span class="status status-' + sProx.c + '">' + sProx.t + '</span></span>' +
+                  '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">' + txtDias(dProx) + '</span>'
+                : '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Total: ' + totalQtd + ' un</span>' +
+                  '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis"><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>') +
             '</div>';
         // Marquee suave para nomes longos
         const nomeScroll = resumo.querySelector('.nome-scroll');
