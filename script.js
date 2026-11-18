@@ -1862,7 +1862,7 @@ function renderLista() {
         resumo.className = 'produto-resumo';
         resumo.innerHTML =
             '<div class="nome-scroll"><span class="nome-text">' + esc(p.nome) + '</span></div>' +
-            '<div class="produto-info" style="justify-content:space-between">' +
+            '<div class="produto-info">' +
             '<span>Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
             '<span>' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) : '') + '</span>' +
             '</div>' +

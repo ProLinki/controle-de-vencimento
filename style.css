@@ -638,7 +638,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.ready { color:#f5c542; }
 
 .nome-scroll { overflow:hidden; white-space:nowrap; width:100%; }
-.nome-text { display:inline-block; }
+.nome-text { display:inline-block; font-weight:700; }
 .nome-text.marquee { animation: marquee 6s linear infinite alternate; }
 @keyframes marquee {
   0% { transform: translateX(0); }
