@@ -505,6 +505,8 @@ async function iniciarScan() {
                             await preencherAvariaDoCatalogo(val);
                         } else if (target && target.id === 'pesq-codigo') {
                             await pesquisarPorCodigo();
+                        } else if (target && target.id === 'busca') {
+                            if (typeof inputBusca !== 'undefined' && inputBusca) inputBusca.dispatchEvent(new Event('input'));
                         } else {
                             await preencherDoCatalogo(val);
                         }
@@ -2185,6 +2187,9 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (btnPesquisarCodigo) btnPesquisarCodigo.addEventListener('click', pesquisarPorCodigo);
     const btnScanPesq = document.getElementById('btn-scan-pesq');
     if (btnScanPesq) btnScanPesq.addEventListener('click', () => { pararScan(); scanTargetInput = document.getElementById('pesq-codigo'); if (modalScan && !modalScan.classList.contains('show')) modalScan.classList.add('show'); iniciarScan(); });
+
+    const btnScanBusca = document.getElementById('btn-scan-busca');
+    if (btnScanBusca) btnScanBusca.addEventListener('click', () => { pararScan(); scanTargetInput = document.getElementById('busca'); if (modalScan && !modalScan.classList.contains('show')) modalScan.classList.add('show'); iniciarScan(); });
     const pesqCodigo = document.getElementById('pesq-codigo');
     if (pesqCodigo) {
         pesqCodigo.addEventListener('change', pesquisarPorCodigo);
