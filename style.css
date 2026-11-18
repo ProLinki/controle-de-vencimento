@@ -280,9 +280,9 @@ body {
   letter-spacing: 0.5px; padding: 4px 8px; border-radius: 6px;
   width: fit-content; border: 1px solid;
 }
-.status-vencido { background: rgba(255, 82, 82, 0.1); color: var(--danger-red); border-color: rgba(255, 82, 82, 0.3); }
-.status-proximo { background: rgba(var(--primary-yellow-rgb), 0.1); color: var(--primary-yellow); border-color: rgba(var(--primary-yellow-rgb), 0.25); }
-.status-ok { background: rgba(76, 175, 80, 0.1); color: var(--success-green); border-color: rgba(76, 175, 80, 0.3); }
+.produto-info .status.status-vencido { background: rgba(255, 82, 82, 0.1); color: var(--danger-red); border-color: rgba(255, 82, 82, 0.3); }
+.produto-info .status.status-proximo { background: rgba(var(--primary-yellow-rgb), 0.1); color: var(--primary-yellow); border-color: rgba(var(--primary-yellow-rgb), 0.25); }
+.produto-info .status.status-ok { background: rgba(76, 175, 80, 0.1); color: var(--success-green); border-color: rgba(76, 175, 80, 0.3); }
 .lote-acoes { display: flex; gap: 8px; }
 .btn-mini {
   padding: 8px 14px;
@@ -590,9 +590,9 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .lote-item { background:#f8f5ed; border:1px solid rgba(60,52,32,.10); }
 .lote-qtd,.produto-card .dias { color:#282720; font-size:1rem; font-weight:700; }
 .produto-card .meta { font-size:.9rem; }
-.status-proximo { background:#fff4d3; color:#b8860b; border-color:#f0d98d; font-weight:700; }
-.status-vencido { background:#fde8e5; color:#c43d35; border-color:#efc0bb; font-weight:700; }
-.status-ok { background:#e7f3e9; color:#28784b; border-color:#c4dfca; font-weight:700; }
+.produto-info .status.status-proximo { background:#fff4d3; color:#b8860b; border-color:#f0d98d; font-weight:700; }
+.produto-info .status.status-vencido { background:#fde8e5; color:#c43d35; border-color:#efc0bb; font-weight:700; }
+.produto-info .status.status-ok { background:#e7f3e9; color:#28784b; border-color:#c4dfca; font-weight:700; }
 .mini-editar { background:#f1ebdc; color:#413b2b; border-color:#ded4bd; }
 .mini-editar:hover { background:#e8dfca; }
 .mini-excluir { background:#fff0ed; color:#a52e27; border-color:#efc0bb; }
