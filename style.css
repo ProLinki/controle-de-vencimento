@@ -637,6 +637,17 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.show { transform:translate(-50%,0); opacity:1; }
 .pull-refresh.ready { color:#f5c542; }
 
+.nome-scroll { overflow:hidden; white-space:nowrap; width:100%; }
+.nome-text { display:inline-block; }
+.nome-text.marquee { animation: marquee 6s linear infinite alternate; }
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(var(--marquee-dist, -100px)); }
+}
+.produto-linha { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:.92rem; }
+.produto-linha .linha-label { font-weight:700; color:#282720; }
+.produto-linha .linha-valor { color:#514c3f; text-align:right; }
+
 .pesq-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:4px; }
 .pesq-card .pesq-titulo { font-size:1rem; font-weight:700; color:#282720; margin-bottom:2px; }
 .pesq-card .pesq-linha { font-size:.9rem; color:#514c3f; line-height:1.35; }

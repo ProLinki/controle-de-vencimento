@@ -1861,16 +1861,28 @@ function renderLista() {
         const resumo = document.createElement('div');
         resumo.className = 'produto-resumo';
         resumo.innerHTML =
-            '<div class="nome">' + esc(p.nome) + '</div>' +
-            '<div class="produto-info">' +
-            '<span>Total: ' + totalQtd + ' un</span>' +
-            (p.codigoBarras ? '<span>Cód: ' + esc(p.codigoBarras) + '</span>' : '') +
-            (p.unidade ? '<span>Conteudo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) + '</span>' : '') +
+            '<div class="nome-scroll"><span class="nome-text">' + esc(p.nome) + '</span></div>' +
+            '<div class="produto-linha">' +
+            '<span class="linha-label">COD: ' + esc(p.codigoBarras || '—') + '</span>' +
+            '<span class="linha-valor">' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) : '') + '</span>' +
             '</div>' +
-            '<div class="resumo-dias">' +
-            '<span class="status status-' + sProx.c + '">' + sProx.t + '</span>' +
-            '<span class="dias">' + txtDias(dProx) + '</span>' +
+            '<div class="produto-linha">' +
+            '<span class="linha-label">TOTAL: ' + totalQtd + ' un</span>' +
+            '<span class="linha-valor"><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>' +
             '</div>';
+        // Marquee suave para nomes longos
+        const nomeScroll = resumo.querySelector('.nome-scroll');
+        const nomeText = resumo.querySelector('.nome-text');
+        if (nomeScroll && nomeText) {
+            requestAnimationFrame(() => {
+                if (nomeText.scrollWidth > nomeScroll.clientWidth + 2) {
+                    const dist = nomeText.scrollWidth - nomeScroll.clientWidth;
+                    nomeText.classList.add('marquee');
+                    nomeText.style.setProperty('--marquee-dist', '-' + dist + 'px');
+                }
+            });
+        }
+
         card.appendChild(resumo);
 
         const detalhes = document.createElement('div');
