@@ -999,7 +999,7 @@ function txtDias(d) {
     const s = a === 1 ? '' : 's';
     if (d < 0) return 'vencido há ' + a + ' dia' + s;
     if (d === 0) return 'vence hoje';
-    return d + ' dia' + s + ' restante' + s;
+    return 'Em ' + d + ' D';
 }
 function abrevUnidade(u) {
     const v = String(u || '').toLowerCase();
