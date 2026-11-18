@@ -997,7 +997,7 @@ function status(d) {
 function txtDias(d) {
     const a = Math.abs(d);
     const s = a === 1 ? '' : 's';
-    if (d < 0) return 'vencido há ' + a + ' dia' + s;
+    if (d < 0) return 'há ' + a + ' D';
     if (d === 0) return 'vence hoje';
     return 'Em ' + d + ' D';
 }
