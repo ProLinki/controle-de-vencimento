@@ -1862,13 +1862,13 @@ function renderLista() {
         resumo.className = 'produto-resumo';
         resumo.innerHTML =
             '<div class="nome-scroll"><span class="nome-text">' + esc(p.nome) + '</span></div>' +
-            '<div class="produto-linha">' +
-            '<span class="linha-label">COD: ' + esc(p.codigoBarras || '—') + '</span>' +
-            '<span class="linha-valor">' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) : '') + '</span>' +
+            '<div class="produto-info" style="justify-content:space-between">' +
+            '<span>Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
+            '<span>' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) : '') + '</span>' +
             '</div>' +
-            '<div class="produto-linha">' +
-            '<span class="linha-label">TOTAL: ' + totalQtd + ' un</span>' +
-            '<span class="linha-valor"><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>' +
+            '<div class="produto-info" style="justify-content:space-between">' +
+            '<span>Total: ' + totalQtd + ' un</span>' +
+            '<span><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>' +
             '</div>';
         // Marquee suave para nomes longos
         const nomeScroll = resumo.querySelector('.nome-scroll');
