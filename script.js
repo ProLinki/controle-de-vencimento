@@ -1934,16 +1934,8 @@ function renderLista() {
                     acoes.appendChild(bEd);
                 }
                 if (sessao && ['admin','gerente','funcionario'].includes(sessao.cargo) && (parseInt(l.quantidade,10)||0) > 0) {
-                    if (d >= 0) {
-                        const bVenda = document.createElement('button'); bVenda.type='button'; bVenda.className='btn-mini mini-editar'; bVenda.textContent='Registrar venda';
-                        bVenda.addEventListener('click', ev => { ev.stopPropagation(); registrarSaida(l.id, 'venda'); }); acoes.appendChild(bVenda);
-                    }
                     const bDesc = document.createElement('button'); bDesc.type='button'; bDesc.className='btn-mini mini-excluir'; bDesc.textContent='Descarte';
                     bDesc.addEventListener('click', ev => { ev.stopPropagation(); registrarSaida(l.id, 'descarte'); }); acoes.appendChild(bDesc);
-                }
-                if (podeGerirPromocoes()) {
-                    const bPromo = document.createElement('button'); bPromo.type='button'; bPromo.className='btn-mini mini-editar'; bPromo.textContent=l.em_promocao?'Retirar destaque':'Destacar para venda';
-                    bPromo.addEventListener('click', ev => { ev.stopPropagation(); alternarPromocao(l); }); acoes.appendChild(bPromo);
                 }
                 if (ex) {
                     const bEx = document.createElement('button');
