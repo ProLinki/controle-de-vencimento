@@ -1875,7 +1875,7 @@ function renderLista() {
             '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
             '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(abrevUnidade(p.unidade)) : '') + '</span>' +
             '</div>' +
-            '<div class="produto-info" style="flex-wrap:nowrap;gap:8px">' +
+            '<div class="produto-info" style="flex-wrap:nowrap;gap:8px;margin-top:6px">' +
             '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Total: ' + totalQtd + ' un</span>' +
             '<span class="status status-' + sProx.c + '">' + sProx.t + '</span>' +
             '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">' + txtDias(dProx) + '</span>' +
