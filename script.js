@@ -1877,7 +1877,7 @@ function renderLista() {
             '</div>' +
             '<div class="produto-info" style="justify-content:space-between;flex-wrap:nowrap;gap:8px">' +
             (dProx < 0
-                ? '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Total: ' + totalQtd + ' un  <span class="status status-' + sProx.c + '">' + sProx.t + '</span></span>' +
+                ? '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;display:flex;gap:8px;align-items:center">Total: ' + totalQtd + ' un <span class="status status-' + sProx.c + '">' + sProx.t + '</span></span>' +
                   '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">' + txtDias(dProx) + '</span>'
                 : '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis">Total: ' + totalQtd + ' un</span>' +
                   '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis"><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>') +
