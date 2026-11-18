@@ -1001,6 +1001,15 @@ function txtDias(d) {
     if (d === 0) return 'vence hoje';
     return d + ' dia' + s + ' restante' + s;
 }
+function abrevUnidade(u) {
+    const v = String(u || '').toLowerCase();
+    if (v === 'litros' || v === 'l') return 'L';
+    if (v === 'ml' || v === 'mililitros') return 'ML';
+    if (v === 'gramas' || v === 'g') return 'G';
+    if (v === 'caixa') return 'CX';
+    return u || '';
+}
+
 function fmtBR(iso) {
     return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
@@ -1422,7 +1431,7 @@ async function carregarItensAvaria() {
             row.dataset.id = it.id;
             row.innerHTML =
                 '<div class="avaria-item-nome">' + esc(it.nome || '') + '</div>' +
-                '<div class="avaria-item-linha">Tipo: ' + esc(it.unidade || '—') + '</div>' +
+                '<div class="avaria-item-linha">Tipo: ' + esc(abrevUnidade(it.unidade) || '—') + '</div>' +
                 (it.codigo_barras ? '<div class="avaria-item-linha">Código de barras: ' + esc(it.codigo_barras) + '</div>' : '') +
                 (it.sku ? '<div class="avaria-item-linha">SKU: ' + esc(it.sku) + '</div>' : '') +
                 '<div class="avaria-item-qtd">Quantidade avariada: ' + (parseInt(it.quantidade,10)||0) + '</div>';
@@ -1689,7 +1698,7 @@ async function pesquisarPorCodigo() {
         if (base) {
             html += '<div class="pesq-card"><div class="pesq-titulo">Catálogo base</div>' +
                 '<div class="pesq-linha">Nome: ' + esc(base.nome) + '</div>' +
-                '<div class="pesq-linha">Unidade: ' + esc(base.unidade) + '</div>' +
+                '<div class="pesq-linha">Unidade: ' + esc(abrevUnidade(base.unidade)) + '</div>' +
                 '<div class="pesq-linha">Conteúdo: ' + esc(base.conteudo) + '</div></div>';
         } else {
             html += '<div class="pesq-card"><div class="pesq-linha">Não encontrado em produtos_base.</div></div>';
@@ -1864,11 +1873,14 @@ function renderLista() {
             '<div class="nome-scroll"><span class="nome-text">' + esc(p.nome) + '</span></div>' +
             '<div class="produto-info">' +
             '<span>Cód: ' + esc(p.codigoBarras || '—') + '</span>' +
-            '<span>' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(p.unidade) : '') + '</span>' +
+            '<span>' + (p.unidade ? 'Conteúdo: ' + esc(p.conteudo) + ' ' + esc(abrevUnidade(p.unidade)) : '') + '</span>' +
             '</div>' +
             '<div class="produto-info" style="justify-content:space-between">' +
-            '<span>Total: ' + totalQtd + ' un</span>' +
-            '<span><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>' +
+            (dProx < 0
+                ? '<span>Total: ' + totalQtd + ' un  <span class="status status-' + sProx.c + '">' + sProx.t + '</span></span>' +
+                  '<span>' + txtDias(dProx) + '</span>'
+                : '<span>Total: ' + totalQtd + ' un</span>' +
+                  '<span><span class="status status-' + sProx.c + '">' + sProx.t + '</span> ' + txtDias(dProx) + '</span>') +
             '</div>';
         // Marquee suave para nomes longos
         const nomeScroll = resumo.querySelector('.nome-scroll');
