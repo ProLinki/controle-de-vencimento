@@ -236,6 +236,8 @@ function aplicarPermissoes() {
     if (menuProdutoBaseItem) menuProdutoBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuBackupBaseItem = document.getElementById('menu-backup-base-item');
     if (menuBackupBaseItem) menuBackupBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
+    const menuUltimosBaseItem = document.getElementById('menu-ultimos-base-item');
+    if (menuUltimosBaseItem) menuUltimosBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuVarreduraItem = document.getElementById('menu-varredura-item');
     if (menuVarreduraItem) menuVarreduraItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
 
@@ -1829,6 +1831,37 @@ async function mesclarTodosVarredura() {
     showToast('Varredura concluída.');
 }
 
+async function loadUltimosBase() {
+    const lista = document.getElementById('ultimos-base-lista');
+    if (!lista) return;
+    lista.textContent = 'Carregando...';
+    try {
+        const { data, error } = await sb.from('produtos_base').select('codigo_barras,nome,unidade,conteudo').order('created_at', { ascending: false }).limit(5);
+        if (error) throw error;
+        lista.innerHTML = '';
+        if (!data || data.length === 0) { lista.textContent = 'Nenhum item encontrado.'; return; }
+        data.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'historico-row';
+            row.style.cursor = 'pointer';
+            row.innerHTML = '<strong>' + esc(item.nome) + '</strong><br><small>Cód: ' + esc(item.codigo_barras) + '</small>';
+            row.addEventListener('click', () => {
+                const modal = document.getElementById('modal-ultimos-base');
+                if (modal) modal.classList.remove('show');
+                const mBase = document.getElementById('modal-produto-base');
+                if (mBase) mBase.classList.add('show');
+                const codigo = document.getElementById('pb-codigo'); if (codigo) codigo.value = item.codigo_barras || '';
+                const nome = document.getElementById('pb-nome'); if (nome) nome.value = item.nome || '';
+                const unidade = document.getElementById('pb-unidade'); if (unidade) unidade.value = item.unidade || 'litros';
+                const conteudo = document.getElementById('pb-conteudo'); if (conteudo) conteudo.value = item.conteudo != null ? item.conteudo : '';
+            });
+            lista.appendChild(row);
+        });
+    } catch (e) {
+        lista.textContent = 'Erro: ' + e.message;
+    }
+}
+
 function renderLista() {
     const termo = normNome(inputBusca.value);
     let filtrados = produtos.filter(p => {
@@ -2197,6 +2230,11 @@ document.addEventListener('DOMContentLoaded', () => { try {
     const menuBackupBase = document.getElementById('menu-backup-base');
     const modalBackupBase = document.getElementById('modal-backup-base');
     if (menuBackupBase) menuBackupBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalBackupBase) modalBackupBase.classList.add('show'); });
+
+    const menuUltimosBase = document.getElementById('menu-ultimos-base');
+    const modalUltimosBase = document.getElementById('modal-ultimos-base');
+    if (menuUltimosBase) menuUltimosBase.addEventListener('click', e => { e.preventDefault(); fecharMenu(); if (modalUltimosBase) { modalUltimosBase.classList.add('show'); loadUltimosBase(); } });
+    if (modalUltimosBase) modalUltimosBase.addEventListener('click', e => { if (e.target === modalUltimosBase) modalUltimosBase.classList.remove('show'); });
 
     const menuVarredura = document.getElementById('menu-varredura');
     const modalVarredura = document.getElementById('modal-varredura');
