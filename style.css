@@ -582,7 +582,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .search-group input[type="text"] { background:#fffdf8; color:#282720; border:1px solid rgba(42,39,30,.14); border-radius:14px; min-height:42px; padding:10px 14px; box-shadow:0 4px 12px rgba(50,43,25,.035); }
 .search-group input::placeholder { color:#928d80; }
 .produto-lista { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:10px; padding:2px 4px 84px 2px; scrollbar-color:rgba(80,72,50,.22) transparent; }
-.produto-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(50,43,25,.045); }
+.produto-card { background:#fffdf8; border:1px solid rgba(60,52,32,.12); border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(50,43,25,.045); min-width:0; overflow:hidden; }
 .produto-card:hover { background:#fffefa; border-color:rgba(191,145,22,.42); }
 .produto-card .nome { color:#282720; font-size:1.18rem; font-weight:800; }
 .produto-info { color:#84620a; font-size:.82rem; }
@@ -626,7 +626,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
   .dashboard-intro p:last-child { font-size:.72rem; }
   .intro-mark { width:36px; height:36px; flex:0 0 36px; border-radius:10px; font-size:.82rem; }
   .search-group input[type="text"] { min-height:40px; padding:9px 12px; }
-  .produto-lista { grid-template-columns:1fr; gap:9px; padding:2px 2px 80px 2px; }
+  .produto-lista { grid-template-columns:minmax(0,1fr); gap:9px; padding:2px 2px 80px 2px; }
   .produto-card { padding:12px; border-radius:14px; }
 }
 .btn-outline { background:#f3eee3; color:#302d25; border-color:#d9d1bf; box-shadow:none; }
