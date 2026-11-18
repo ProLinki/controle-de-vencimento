@@ -590,9 +590,9 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .lote-item { background:#f8f5ed; border:1px solid rgba(60,52,32,.10); }
 .lote-qtd,.produto-card .dias { color:#282720; font-size:1rem; font-weight:700; }
 .produto-card .meta { font-size:.9rem; }
-.status-proximo { background:#fff4d3; color:#8b6509; border-color:#f0d98d; }
-.status-vencido { background:#fde8e5; color:#a52e27; border-color:#efc0bb; }
-.status-ok { background:#e7f3e9; color:#23683f; border-color:#c4dfca; }
+.status-proximo { background:#fff4d3; color:#b8860b; border-color:#f0d98d; font-weight:700; }
+.status-vencido { background:#fde8e5; color:#c43d35; border-color:#efc0bb; font-weight:700; }
+.status-ok { background:#e7f3e9; color:#28784b; border-color:#c4dfca; font-weight:700; }
 .mini-editar { background:#f1ebdc; color:#413b2b; border-color:#ded4bd; }
 .mini-editar:hover { background:#e8dfca; }
 .mini-excluir { background:#fff0ed; color:#a52e27; border-color:#efc0bb; }
@@ -638,7 +638,7 @@ body { background: radial-gradient(circle at 15% 0%, #f8f4eb 0, #eee9df 55%, #e8
 .pull-refresh.ready { color:#f5c542; }
 
 .nome-scroll { overflow:hidden; white-space:nowrap; width:100%; }
-.nome-text { display:inline-block; font-weight:700; }
+.nome-text { display:inline-block; font-weight:800; font-size:1.3rem; }
 .nome-text.marquee { animation: marquee 6s linear infinite alternate; }
 @keyframes marquee {
   0% { transform: translateX(0); }
