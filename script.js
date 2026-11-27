@@ -240,6 +240,10 @@ function aplicarPermissoes() {
     if (menuUltimosBaseItem) menuUltimosBaseItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuVarreduraItem = document.getElementById('menu-varredura-item');
     if (menuVarreduraItem) menuVarreduraItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
+    const menuDesmesclarItem = document.getElementById('menu-desmesclar-item');
+    if (menuDesmesclarItem) menuDesmesclarItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
+    const menuDesmesclarItem = document.getElementById('menu-desmesclar-item');
+    if (menuDesmesclarItem) menuDesmesclarItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
 
     // Drawer: patrao ve apenas opcoes especificas
     if (sessao && sessao.cargo === 'patrao') {
@@ -1750,8 +1754,9 @@ async function mesclarLotes(produtoId) {
     const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
     const grupos = {};
     lotesAtivos.forEach(l => {
-        if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
-        grupos[l.vencimento].push(l);
+        const chave = (l.vencimento || '') + '|' + (l.codigoBarras || p.codigoBarras || '');
+        if (!grupos[chave]) grupos[chave] = [];
+        grupos[chave].push(l);
     });
     let mesclou = false;
     try {
@@ -1789,8 +1794,9 @@ function produtosComMesclagem() {
         const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
         const grupos = {};
         lotesAtivos.forEach(l => {
-            if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
-            grupos[l.vencimento].push(l);
+            const chave = (l.vencimento || '') + '|' + (l.codigoBarras || p.codigoBarras || '');
+            if (!grupos[chave]) grupos[chave] = [];
+            grupos[chave].push(l);
         });
         return Object.keys(grupos).some(v => grupos[v].length > 1);
     });
@@ -1809,14 +1815,15 @@ function renderVarredura() {
         const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
         const grupos = {};
         lotesAtivos.forEach(l => {
-            if (!grupos[l.vencimento]) grupos[l.vencimento] = [];
-            grupos[l.vencimento].push(l);
+            const chave = (l.vencimento || '') + '|' + (l.codigoBarras || p.codigoBarras || '');
+            if (!grupos[chave]) grupos[chave] = [];
+            grupos[chave].push(l);
         });
         const datas = Object.keys(grupos).filter(v => grupos[v].length > 1);
         const row = document.createElement('div');
         row.className = 'historico-row';
         row.innerHTML = '<strong>' + esc(p.nome) + '</strong><br>' +
-            datas.map(v => 'Data ' + v + ': ' + grupos[v].map(l => l.quantidade + ' un').join(' + ')).join('<br>') +
+            datas.map(v => 'Data ' + v.split('|')[0] + ' (Cód: ' + (v.split('|')[1] || '—') + '): ' + grupos[v].map(l => l.quantidade + ' un').join(' + ')).join('<br>') +
             '<br><button type="button" class="btn-mini mini-editar" data-id="' + esc(p.id) + '" style="margin-top:6px">Mesclar este produto</button>';
         const btn = row.querySelector('button');
         if (btn) btn.addEventListener('click', () => { mesclarLotes(p.id).then(() => { renderVarredura(); }); });
@@ -1865,6 +1872,115 @@ async function loadUltimosBase() {
     } catch (e) {
         lista.textContent = 'Erro: ' + e.message;
     }
+}
+
+// ---------- DESMESCLAR PRODUTOS ----------
+function produtosDesmesclados() {
+    return produtos.filter(p => {
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        const grupos = {};
+        lotesAtivos.forEach(l => {
+            const cb = (l.codigoBarras || p.codigoBarras || '').trim();
+            if (!grupos[cb]) grupos[cb] = [];
+            grupos[cb].push(l);
+        });
+        return Object.keys(grupos).length > 1;
+    });
+}
+
+function renderDesmesclar() {
+    const lista = document.getElementById('desmesclar-lista');
+    if (!lista) return;
+    lista.innerHTML = '';
+    const candidatos = produtosDesmesclados();
+    if (candidatos.length === 0) {
+        lista.textContent = 'Nenhum produto com lotes misturados por código.';
+        return;
+    }
+    candidatos.forEach(p => {
+        const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+        const grupos = {};
+        lotesAtivos.forEach(l => {
+            const cb = (l.codigoBarras || p.codigoBarras || '').trim();
+            if (!grupos[cb]) grupos[cb] = [];
+            grupos[cb].push(l);
+        });
+        const row = document.createElement('div');
+        row.className = 'historico-row';
+        row.innerHTML = '<strong>' + esc(p.nome) + '</strong><br>' +
+            Object.keys(grupos).map(cb => 'Cód: ' + (cb || '—') + ' → ' + grupos[cb].map(l => l.quantidade + ' un').join(', ')).join('<br>') +
+            '<br><button type="button" class="btn-mini mini-editar" data-id="' + esc(p.id) + '" style="margin-top:6px">Desmesclar este produto</button>';
+        const btn = row.querySelector('button');
+        if (btn) btn.addEventListener('click', () => { desmesclarProduto(p.id).then(() => renderDesmesclar()); });
+        lista.appendChild(row);
+    });
+}
+
+async function desmesclarProduto(produtoId) {
+    if (!podeGerirFuncionarios() && !(sessao && sessao.cargo === 'admin')) return;
+    if (!sbReady) { showToast('Supabase não conectado.'); return; }
+    const p = produtos.find(x => x.id === produtoId);
+    if (!p) return;
+    const lotesAtivos = p.lotes.filter(l => (parseInt(l.quantidade,10)||0) > 0);
+    const grupos = {};
+    lotesAtivos.forEach(l => {
+        const cb = (l.codigoBarras || p.codigoBarras || '').trim();
+        if (!grupos[cb]) grupos[cb] = [];
+        grupos[cb].push(l);
+    });
+    const codigos = Object.keys(grupos);
+    if (codigos.length <= 1) { showToast('Nada para desmesclar.'); return; }
+    try {
+        const primeiroCodigo = codigos[0];
+        // Move os demais grupos para produtos distintos (ou existentes).
+        for (let i = 1; i < codigos.length; i++) {
+            const cb = codigos[i];
+            let targetId = null;
+            const existente = produtos.find(x => x.codigoBarras === cb && x.id !== p.id);
+            if (existente) {
+                targetId = existente.id;
+            } else {
+                let unidade = p.unidade;
+                let conteudo = p.conteudo;
+                try {
+                    const { data: base } = await sb.from('produtos_base').select('unidade,conteudo').eq('codigo_barras', cb).maybeSingle();
+                    if (base) { unidade = base.unidade || unidade; conteudo = base.conteudo != null ? base.conteudo : conteudo; }
+                } catch (e) {}
+                const { data: novo, error: insErr } = await sb.from('produtos').insert({
+                    nome: p.nome,
+                    codigo_barras: cb || null,
+                    unidade,
+                    conteudo: Number(conteudo) || null
+                }).select('id').single();
+                if (insErr) throw insErr;
+                targetId = novo.id;
+            }
+            for (const l of grupos[cb]) {
+                const { error: upErr } = await sb.from('lotes').update({ produto_id: targetId }).eq('id', l.id);
+                if (upErr) throw upErr;
+            }
+        }
+        // Atualiza o produto original para o primeiro codigo.
+        if (p.codigoBarras !== primeiroCodigo) {
+            await sb.from('produtos').update({ codigo_barras: primeiroCodigo || null }).eq('id', p.id);
+        }
+        await loadProdutos();
+        showToast('Produto desmesclado com sucesso.');
+    } catch (e) {
+        showToast('Erro ao desmesclar: ' + e.message);
+    }
+}
+
+async function desmesclarTodos() {
+    const candidatos = produtosDesmesclados();
+    if (candidatos.length === 0) { showToast('Nenhum produto para desmesclar.'); return; }
+    if (!confirm('Desmesclar todos os produtos listados?')) return;
+    for (const p of candidatos) {
+        await desmesclarProduto(p.id);
+    }
+    await loadProdutos();
+    renderDesmesclar();
+    showToast('Desmesclagem concluída.');
 }
 
 function renderLista() {
@@ -2247,6 +2363,13 @@ document.addEventListener('DOMContentLoaded', () => { try {
     if (modalVarredura) modalVarredura.addEventListener('click', e => { if (e.target === modalVarredura) modalVarredura.classList.remove('show'); });
     const btnVarreduraMesclarTudo = document.getElementById('btn-varredura-mesclar-tudo');
     if (btnVarreduraMesclarTudo) btnVarreduraMesclarTudo.addEventListener('click', mesclarTodosVarredura);
+
+    const menuDesmesclar = document.getElementById('menu-desmesclar');
+    const modalDesmesclar = document.getElementById('modal-desmesclar');
+    if (menuDesmesclar) menuDesmesclar.addEventListener('click', async e => { e.preventDefault(); fecharMenu(); await loadProdutos(); if (modalDesmesclar) { modalDesmesclar.classList.add('show'); renderDesmesclar(); } });
+    if (modalDesmesclar) modalDesmesclar.addEventListener('click', e => { if (e.target === modalDesmesclar) modalDesmesclar.classList.remove('show'); });
+    const btnDesmesclarTudo = document.getElementById('btn-desmesclar-tudo');
+    if (btnDesmesclarTudo) btnDesmesclarTudo.addEventListener('click', desmesclarTodos);
     if (modalBackupBase) modalBackupBase.addEventListener('click', e => { if (e.target === modalBackupBase) modalBackupBase.classList.remove('show'); });
     const btnBaixarBackup = document.getElementById('btn-baixar-backup-base');
     if (btnBaixarBackup) btnBaixarBackup.addEventListener('click', baixarBackupBase);
