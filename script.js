@@ -397,7 +397,12 @@ async function saveProduto(nome, unidade, conteudo, qtd, venc, codigoBarras) {
 
         let existente = null;
         if (cb) existente = (prods || []).find(p => p.codigo_barras && p.codigo_barras === cb);
-        if (!existente) existente = (prods || []).find(p => normNome(p.nome) === normNome(nome));
+        // So mescla por nome apenas quando for o mesmo produto (mesma unidade e conteudo).
+        if (!existente && !cb) existente = (prods || []).find(p =>
+            normNome(p.nome) === normNome(nome) &&
+            (p.unidade || '') === (unidade || '') &&
+            Number(p.conteudo) === Number(conteudo)
+        );
 
         let pid;
         if (existente) {
