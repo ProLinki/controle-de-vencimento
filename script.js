@@ -242,8 +242,6 @@ function aplicarPermissoes() {
     if (menuVarreduraItem) menuVarreduraItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
     const menuDesmesclarItem = document.getElementById('menu-desmesclar-item');
     if (menuDesmesclarItem) menuDesmesclarItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
-    const menuDesmesclarItem = document.getElementById('menu-desmesclar-item');
-    if (menuDesmesclarItem) menuDesmesclarItem.style.display = (sessao && sessao.cargo === 'admin') ? '' : 'none';
 
     // Drawer: patrao ve apenas opcoes especificas
     if (sessao && sessao.cargo === 'patrao') {
