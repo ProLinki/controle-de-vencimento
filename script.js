@@ -124,7 +124,7 @@ function initSupabase() {
         return;
     }
     try {
-        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
         sbReady = true;
     } catch (e) {
         showToast('Erro Supabase: ' + e.message);
@@ -2191,18 +2191,20 @@ document.addEventListener('DOMContentLoaded', () => { try {
     // Restaura sessao autenticada no Supabase; localStorage nao define cargo nem permissao.
     (async () => {
       try {
-        const { data: authState } = await sb.auth.getSession();
-        const user = authState.session && authState.session.user;
+        if (!sbReady) initSupabase();
+        if (!sb) throw new Error('Supabase indisponivel');
+        const { data: authState, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        const user = authState && authState.session && authState.session.user;
         if (user) {
           telaLogin.style.display = 'none';
           const { data: perfil, error } = await sb.from('funcionarios').select('id,nome,login,cargo,ativo').eq('auth_user_id', user.id).maybeSingle();
           if (error) throw error;
           if (perfil && perfil.ativo) { sessao = { ...perfil, loginEm: new Date().toISOString() }; await iniciarApp(); return; }
           await sb.auth.signOut();
-          telaLogin.style.display = 'flex';
         }
       } catch (err) { console.error('Restauracao de sessao:', err); }
-      sessao = null; telaLogin.style.display = 'flex'; loginUsuario.focus();
+      sessao = null; telaLogin.style.display = 'flex'; try { loginUsuario.focus(); } catch (e) {}
     })();
 
     // Login
